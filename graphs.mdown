@@ -1,0 +1,11 @@
+### Matrix
+| bounds |{a,b,c}|{j,h}|{a,b,c,d,f}|{b,d,g}|
+|-|-------|-----|-----------|-------|
+|lower bounds| a | a,b,c,d,f | a | a,b|
+|upper bounds| e,f,h,j | none | f,j,h | g,h |
+|greatest lower bounds| a | f | a | b |
+|least upper bounds| e | none | f | g |
+
+
+**Lattice**
+A Poset in which any two distinct elements have a greatest lower bound & a least upper bounds
