@@ -9,3 +9,22 @@
 
 **Lattice**
 A Poset in which any two distinct elements have a greatest lower bound & a least upper bounds
+
+An element of a poset is a **maximal** is it is not less than any other element of the poset. 
+
+An element $a$ is a **maximal** of $(S, \preccurlyeq)$ if there is $b \in S$ such that $a \precsim b$.
+
+An element $a$ is a **minimal** of $(S, \preccurlyeq)$ if there is no element $b \in S$ such that $b \precsim a$.
+
+> Remember the Hasse Diagram to show **maximal** and **minimal** elements
+
+### Graphs
+
+*Def:* A Graph $G = (V,E)$ is an ordered pair where $V$ is a finite set of vertices and $E$ is a finite multiset of unordered pairs of elements from $V$
+
+#### Graph Representations
+**Adjecency List**
+**Incidence Matrix**
+**Adjecency Matrix**
+
+#### Isomorphism
