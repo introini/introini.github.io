@@ -1,8 +1,8 @@
 
-## Final | **Study  Guide **
+## Final | **Study  Guide**
 ----------
 
-###Counting
+### Counting
 - Using the multiplication principle 
     - Early examples in Section 5.1,  6th Edition 
     - Early examples in Section 6.1, 7th Edition 
@@ -15,7 +15,7 @@
     - Example 5, Section 6.2, 7th Edition 
 - Pascal’s Formula/Pascal’s Triangle/Binomial Theorem 
 
-###Probability 
+### Probability 
 - Poker hand 
     - Examples 5 and 6, Section 6.1, 6th Edition 
     - Examples 5 and 6, Section 7.1, 7th Edition 
@@ -27,7 +27,7 @@
     - Example 1, Section 6.3, 6th Edition 
     - Example 1, Section 7.3, 7th Edition 
 
-###Advanced Counting 
+### Advanced Counting 
 - Given a description of a process, describe it using a recurrence relation, with initial conditions
     - Example 6, Section 7.1, 6th Edition 
     - Example 3, Section 8.1, 7th Edition 
