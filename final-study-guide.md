@@ -27,6 +27,8 @@
     - Example 1, Section 6.3, 6th Edition 
     - Example 1, Section 7.3, 7th Edition 
 
+$\sum_{i}$
+
 ### Advanced Counting 
 - Given a description of a process, describe it using a recurrence relation, with initial conditions
     - Example 6, Section 7.1, 6th Edition 
