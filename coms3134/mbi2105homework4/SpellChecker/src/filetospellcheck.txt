@@ -1,0 +1,4 @@
+..This is som text that needs to be testsed for spelling mistalkes., 
+there will be some wors that are coreect and, some that
+are,, misspelled. But, we'll see abot that later.
+plus thiss stuf.

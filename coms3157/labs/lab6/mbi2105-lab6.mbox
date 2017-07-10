@@ -1,0 +1,1148 @@
+From ae46925d5e0fb537b465ef059b2c0829eb896ffc Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Sun, 26 Mar 2017 01:14:54 -0400
+Subject: [PATCH 01/15] modified Makefile for testing, and inclusion of helper
+ files
+
+---
+ part1/Makefile | 19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/part1/Makefile b/part1/Makefile
+index 813b8ec..21249dc 100644
+--- a/part1/Makefile
++++ b/part1/Makefile
+@@ -14,15 +14,30 @@ LDFLAGS = -g -L../../lab3/part1
+ LDLIBS = -lmylist
+ 
+ .PHONY: default
+-default: mdb-lookup-server
++default: mdb-lookup-server 
+ 
++mdb-lookup-server: mdb-lookup-server.o mdb-lookup.o DieWithError.o
+ # header dependency
+-mdb-lookup-server.o: mdb.h
++mdb-lookup-server.o: mdb-lookup.o DieWithError.o mdb.h
++mdb-lookup.o: DieWithError.o 
++DieWithError.o:
+ 
+ .PHONY: clean
+ clean:
+ 	rm -f *.o *~ a.out core mdb-lookup-server
+ 
++.PHONY: valgrind
++valgrind:
++	valgrind --leak-check=full ./mdb-lookup-server mdb-cs3157-short 8888
++
++.PHONY: novalgrind
++novalgrind:
++	./mdb-lookup-server mdb-cs3157-short 8888
++
++.PHONY: connect
++connect: 
++	nc 127.0.0.1 8888
++
+ .PHONY: all
+ all: clean default
+ 
+-- 
+2.7.4
+
+
+From 4c8f8162079143d54dd9c3c09113ace6ca673c70 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Sun, 26 Mar 2017 01:15:42 -0400
+Subject: [PATCH 02/15] added mylist.h as an include
+
+---
+ part1/mdb.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/part1/mdb.h b/part1/mdb.h
+index 5a30b8d..9dd91ad 100644
+--- a/part1/mdb.h
++++ b/part1/mdb.h
+@@ -5,6 +5,7 @@
+ 
+ #ifndef _MDB_H_
+ #define _MDB_H_
++#include "mylist.h"
+ 
+ struct MdbRec {
+     char name[16];
+-- 
+2.7.4
+
+
+From a2e4a7aff9d5ee0d923901d9ba170643ce80775b Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Sun, 26 Mar 2017 01:18:03 -0400
+Subject: [PATCH 03/15] Adding DieWithError file
+
+---
+ part1/DieWithError.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+ create mode 100644 part1/DieWithError.c
+
+diff --git a/part1/DieWithError.c b/part1/DieWithError.c
+new file mode 100644
+index 0000000..a00f377
+--- /dev/null
++++ b/part1/DieWithError.c
+@@ -0,0 +1,8 @@
++#include <stdio.h>  /* for perror() */
++#include <stdlib.h> /* for exit() */
++
++void DieWithError(char *errorMessage)
++{
++    perror(errorMessage);
++    exit(1);
++}
+-- 
+2.7.4
+
+
+From cd1cf2995ee8d726a3d92d6dab6b7d35365e9e20 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Sun, 26 Mar 2017 01:19:10 -0400
+Subject: [PATCH 04/15] Currently handles the TCP request and frees memory, but
+ does not respond to the client
+
+---
+ part1/mdb-lookup.c | 157 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 157 insertions(+)
+ create mode 100644 part1/mdb-lookup.c
+
+diff --git a/part1/mdb-lookup.c b/part1/mdb-lookup.c
+new file mode 100644
+index 0000000..87ddb52
+--- /dev/null
++++ b/part1/mdb-lookup.c
+@@ -0,0 +1,157 @@
++
++#include "includes.h" 
++
++#define RCVBUFSIZE 40 
++
++void DieWithError(char
++        *errorMessage);
++/*
++ * freeNodes will allow us to free memory allocated for each of the structures
++ * being passed into the linked list.
++ *
++ */
++void freeNodes(void *p){ free(p); }
++
++/*
++ * This function takes the address of the list (passed in as a param) and
++ * prints out each record as it walks through the list.  'int num' will keep
++ * track of how many records we've gone through.
++ *
++ */
++void printRecs(struct List *list) { struct Node *node = list->head; struct
++    MdbRec *pRec; int num = 1; while (node) { pRec = node->data;
++        fprintf(stderr, "%4d: {%s} said {%s}\n", num, pRec->name, pRec->msg);
++        num++; node = node->next; }
++    
++    printf("\n");
++
++}
++
++/*
++ * Our search method will take in the address of a list, and a pointer to the
++ * search term we're interested in. Using these two parameters, we can walk the
++ * list checking if the node contains any part of the search term we've passed
++ * it.
++ *
++ * It's important to make sure that the last character of the search term be
++ * '\0', otherwise the strstr() function will fail.
++ *
++ */
++void searchMdb(struct List *list, char *q) {
++
++    size_t len = strlen(q); struct Node *node = list->head; struct MdbRec
++        *pRec; int num = 1;
++
++    if (!(isprint(q[len-1]))) { q[len-1] = '\0'; }
++    
++    while (node) {
++
++        pRec = node->data; if (strstr(pRec->name,q) || strstr(pRec->msg,q)) {
++            fprintf(stderr, "%4d: {%s} said {%s}\n",num, pRec->name,
++                    pRec->msg); } num++; node = node->next; }
++
++    printf("\n"); }
++
++/*
++ * Our main function will run the core part of this program.  This includes
++ * opening the databas for reading, adding each record into a linked list, and
++ * requesting input from the user
++ *
++ */
++//int main(int argc, char **argv) {
++void HandleTCPClient(char *database, int clntSocket) {
++
++    FILE *fp;
++    
++    struct List list; struct Node *node = NULL; struct MdbRec *ptrRec;
++   
++    const char *s = "r"; // Read Only flag
++    
++    char search[1000]; // Enough space in the char[] to read in a large input
++    int  sTrunclen = 6; // Cutoff with space for 5 char and '\0' char
++    char sTrunc[sTrunclen];
++
++    /* Opening the database file as read-only. We also need to make sure that
++     * we can exit properly if for some reason the file cannot be opened.
++     */
++    if ((fp = fopen(database, s)) == NULL) {
++        fprintf(stderr, "%s: No such file or directory\n", database);
++        exit(1);
++    }
++    
++    /* Here we need to initialize the list and build each
++     * node with the correct amount of memory before we add a its address
++     * to the linked list.
++     * 
++     */
++    initList(&list);
++    while (!feof(fp) && !ferror(fp)){
++       
++        ptrRec = (struct MdbRec *) malloc(sizeof(struct MdbRec));    
++        if (ptrRec == NULL) { perror("malloc() error"); exit(1); }
++        memset(ptrRec, 0, sizeof(struct MdbRec));
++
++        /* Reading the file 40 bytes at a time will allow us to
++         * efficiently construct the linked list
++         */
++        if (fread(ptrRec,40,1,fp) == 1) {
++            node = addAfter(&list,node,(void *)ptrRec); 
++            if (node == NULL) {
++                perror("error");
++                exit(1);
++            }
++        }
++    }
++
++    /* This loop will actually serve as the main part of 
++     * our program. Using fgets, we can take input from stdin, 
++     * and then truncate it to fit our 5 char requirement.
++     * strncpy() will do the actual truncating, and the rest will
++     * be handled by 'searchMdb' or 'printRecs', depending
++     * on what the user has input.
++     */ 
++    char mdbBuffer[RCVBUFSIZE];
++    int recvMsgSize;
++    FILE *input;
++
++    if ((recvMsgSize = recv(clntSocket, mdbBuffer, RCVBUFSIZE, 0)) < 0)
++        DieWithError("recv() failed");
++    
++    input = fdopen(clntSocket, s);
++    while (recvMsgSize > 0) {
++
++        while (fgets(search,sizeof(search),input) != NULL) {
++                memset(sTrunc,'\0',sTrunclen);
++                strncpy(sTrunc, search, 5);
++                /* Here we can pass the user's search term to searchMdb unless
++                * they simply pressed the 'return' without typing a search term.
++                */
++                if (isprint(sTrunc[0])) {
++                        searchMdb(&list,sTrunc); 
++                } else {
++                        printRecs(&list);    
++                }
++
++        }
++
++    if ((recvMsgSize = recv(clntSocket, mdbBuffer, RCVBUFSIZE, 0)) < 0)
++        DieWithError("recv() failed");
++
++    }
++    
++    /* Check for any errors that occured while opening the file */
++    if (ferror(fp)) {
++           perror("error");
++           exit(1);
++    }         
++
++    /* Free all memory allocated */
++    free(ptrRec);
++    traverseList(&list,&freeNodes);
++    removeAllNodes(&list);
++    
++    /* Close the database */
++    fclose(fp);
++    fclose(input);
++
++}
+-- 
+2.7.4
+
+
+From c5af24569bad7eeaf55cb1598cc4a4de2fd05d00 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Sun, 26 Mar 2017 01:20:39 -0400
+Subject: [PATCH 05/15] starts a server and calls the HandleTCPCLient() from
+ mdb-lookup.c
+
+---
+ part1/mdb-lookup-server.c | 65 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
+ create mode 100644 part1/mdb-lookup-server.c
+
+diff --git a/part1/mdb-lookup-server.c b/part1/mdb-lookup-server.c
+new file mode 100644
+index 0000000..9175712
+--- /dev/null
++++ b/part1/mdb-lookup-server.c
+@@ -0,0 +1,65 @@
++#include "includes.h"
++
++#define MAXPENDING 5    /* Maximum outstanding connection requests */
++
++void DieWithError(char *errorMessage);  /* Error handling function */
++void HandleTCPClient(char *database, int clntSocket);   /* TCP client handling function */
++
++int main(int argc, char *argv[])
++{
++    int servSock;                    /* Socket descriptor for server */
++    int clntSock;                    /* Socket descriptor for client */
++    struct sockaddr_in mdbServAddr; /* Local address */
++    struct sockaddr_in mdbClntAddr; /* Client address */
++    unsigned short mdbServPort;     /* Server port */
++    unsigned int clntLen;            /* Length of client address data structure */
++    char *db = argv[1];
++    // ignore SIGPIPE so that we don't terminate when we call
++    // send() on a disconnected socket.
++    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) 
++        DieWithError("signal() failed");
++
++    if (argc != 3)     /* Test for correct number of arguments */
++    {
++        fprintf(stderr, "Usage:  %s <Database> <Server Port>\n", argv[0]);
++        exit(1);
++    }
++
++    mdbServPort = atoi(argv[2]);  /* First arg:  local port */
++
++    /* Create socket for incoming connections */
++    if ((servSock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
++        DieWithError("socket() failed");
++      
++    /* Construct local address structure */
++    memset(&mdbServAddr, 0, sizeof(mdbServAddr));   /* Zero out structure */
++    mdbServAddr.sin_family = AF_INET;                /* Internet address family */
++    mdbServAddr.sin_addr.s_addr = htonl(INADDR_ANY); /* Any incoming interface */
++    mdbServAddr.sin_port = htons(mdbServPort);      /* Local port */
++
++    /* Bind to the local address */
++    if (bind(servSock, (struct sockaddr *) &mdbServAddr, sizeof(mdbServAddr)) < 0)
++        DieWithError("bind() failed");
++
++    /* Mark the socket so it will listen for incoming connections */
++    if (listen(servSock, MAXPENDING) < 0)
++        DieWithError("listen() failed");
++
++    for (;;) /* Run forever */
++    {
++        /* Set the size of the in-out parameter */
++        clntLen = sizeof(mdbClntAddr);
++
++        /* Wait for a client to connect */
++        if ((clntSock = accept(servSock, (struct sockaddr *) &mdbClntAddr, 
++                               &clntLen)) < 0)
++            DieWithError("accept() failed");
++
++        /* clntSock is connected to a client! */
++
++        printf("Handling client %s\n", inet_ntoa(mdbClntAddr.sin_addr));
++
++        HandleTCPClient(db,clntSock);
++    }
++    /* NOT REACHED */
++}
+-- 
+2.7.4
+
+
+From e4525ac4d14f8549482acb765f72d7412941581d Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Sun, 26 Mar 2017 01:21:44 -0400
+Subject: [PATCH 06/15] contains all of the header files needed to run the
+ server.
+
+---
+ part1/includes.h | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+ create mode 100644 part1/includes.h
+
+diff --git a/part1/includes.h b/part1/includes.h
+new file mode 100644
+index 0000000..d6c3f89
+--- /dev/null
++++ b/part1/includes.h
+@@ -0,0 +1,19 @@
++#ifndef __INCLUDES_H__
++#define __INCLUDES_H__
++
++#include <stdio.h>  /* for perror() */
++#include <stdlib.h> /* for exit() */
++#include <stdio.h>      /* for printf() and fprintf() */
++#include <sys/socket.h> /* for socket(), bind(), and connect() */
++#include <arpa/inet.h>  /* for sockaddr_in and inet_ntoa() */
++#include <stdlib.h>     /* for atoi() and exit() */
++#include <string.h>     /* for memset() */
++#include <unistd.h>     /* for close() */
++#include <stdlib.h>
++#include <assert.h>
++#include <string.h>
++#include "mdb.h"
++#include <ctype.h>
++#include <signal.h>
++
++#endif
+-- 
+2.7.4
+
+
+From e27ef910d0a11cd173292902a86e5fc771dc4fad Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Thu, 30 Mar 2017 23:16:26 -0400
+Subject: [PATCH 07/15] Removed unneccesary recv call, cleaned up while loop
+
+---
+ part1/mdb-lookup.c | 132 ++++++++++++++++++-----------------------------------
+ 1 file changed, 44 insertions(+), 88 deletions(-)
+
+diff --git a/part1/mdb-lookup.c b/part1/mdb-lookup.c
+index 87ddb52..ca8cda8 100644
+--- a/part1/mdb-lookup.c
++++ b/part1/mdb-lookup.c
+@@ -1,10 +1,8 @@
+-
+ #include "includes.h" 
+ 
+-#define RCVBUFSIZE 40 
++#define SNDBUFSIZE 56 /* Enough space for the entire line */
+ 
+-void DieWithError(char
+-        *errorMessage);
++void DieWithError(char *errorMessage);
+ /*
+  * freeNodes will allow us to free memory allocated for each of the structures
+  * being passed into the linked list.
+@@ -12,64 +10,18 @@ void DieWithError(char
+  */
+ void freeNodes(void *p){ free(p); }
+ 
+-/*
+- * This function takes the address of the list (passed in as a param) and
+- * prints out each record as it walks through the list.  'int num' will keep
+- * track of how many records we've gone through.
+- *
+- */
+-void printRecs(struct List *list) { struct Node *node = list->head; struct
+-    MdbRec *pRec; int num = 1; while (node) { pRec = node->data;
+-        fprintf(stderr, "%4d: {%s} said {%s}\n", num, pRec->name, pRec->msg);
+-        num++; node = node->next; }
+-    
+-    printf("\n");
+-
+-}
+-
+-/*
+- * Our search method will take in the address of a list, and a pointer to the
+- * search term we're interested in. Using these two parameters, we can walk the
+- * list checking if the node contains any part of the search term we've passed
+- * it.
+- *
+- * It's important to make sure that the last character of the search term be
+- * '\0', otherwise the strstr() function will fail.
+- *
+- */
+-void searchMdb(struct List *list, char *q) {
+-
+-    size_t len = strlen(q); struct Node *node = list->head; struct MdbRec
+-        *pRec; int num = 1;
+-
+-    if (!(isprint(q[len-1]))) { q[len-1] = '\0'; }
+-    
+-    while (node) {
+-
+-        pRec = node->data; if (strstr(pRec->name,q) || strstr(pRec->msg,q)) {
+-            fprintf(stderr, "%4d: {%s} said {%s}\n",num, pRec->name,
+-                    pRec->msg); } num++; node = node->next; }
+-
+-    printf("\n"); }
+-
+-/*
+- * Our main function will run the core part of this program.  This includes
+- * opening the databas for reading, adding each record into a linked list, and
+- * requesting input from the user
+- *
+- */
+-//int main(int argc, char **argv) {
+ void HandleTCPClient(char *database, int clntSocket) {
+ 
+     FILE *fp;
+     
+     struct List list; struct Node *node = NULL; struct MdbRec *ptrRec;
+-   
+-    const char *s = "r"; // Read Only flag
+-    
++ 
++    const char *s = "r"; // Read Only flag 
+     char search[1000]; // Enough space in the char[] to read in a large input
+     int  sTrunclen = 6; // Cutoff with space for 5 char and '\0' char
+-    char sTrunc[sTrunclen];
++    char sTrunc[sTrunclen], sndBuffer[SNDBUFSIZE];
++    char blankLine[2] = {'\n','\0'};
++    int  sndMsgSize;
+ 
+     /* Opening the database file as read-only. We also need to make sure that
+      * we can exit properly if for some reason the file cannot be opened.
+@@ -103,40 +55,44 @@ void HandleTCPClient(char *database, int clntSocket) {
+         }
+     }
+ 
+-    /* This loop will actually serve as the main part of 
+-     * our program. Using fgets, we can take input from stdin, 
+-     * and then truncate it to fit our 5 char requirement.
+-     * strncpy() will do the actual truncating, and the rest will
+-     * be handled by 'searchMdb' or 'printRecs', depending
+-     * on what the user has input.
+-     */ 
+-    char mdbBuffer[RCVBUFSIZE];
+-    int recvMsgSize;
+-    FILE *input;
+-
+-    if ((recvMsgSize = recv(clntSocket, mdbBuffer, RCVBUFSIZE, 0)) < 0)
+-        DieWithError("recv() failed");
+     
+-    input = fdopen(clntSocket, s);
+-    while (recvMsgSize > 0) {
+-
+-        while (fgets(search,sizeof(search),input) != NULL) {
+-                memset(sTrunc,'\0',sTrunclen);
+-                strncpy(sTrunc, search, 5);
+-                /* Here we can pass the user's search term to searchMdb unless
+-                * they simply pressed the 'return' without typing a search term.
+-                */
+-                if (isprint(sTrunc[0])) {
+-                        searchMdb(&list,sTrunc); 
+-                } else {
+-                        printRecs(&list);    
+-                }
+-
+-        }
+-
+-    if ((recvMsgSize = recv(clntSocket, mdbBuffer, RCVBUFSIZE, 0)) < 0)
+-        DieWithError("recv() failed");
+-
++    /* wrapping socket descriptor in a FILE * */
++    FILE *input = fdopen(clntSocket, s);
++    while (fgets(search,sizeof(search),input) != NULL) {
++        /* Clean up sTrunc */        
++        memset(sTrunc,'\0',sTrunclen);
++        strncpy(sTrunc, search, 5);
++        
++        size_t len = strlen(sTrunc); 
++        if ( !( isprint( sTrunc[len-1] ) ) ) { 
++                sTrunc[len-1] = '\0'; 
++        }        
++        
++        /* Search the list */
++        int num = 1;
++        struct Node *node = list.head; 
++        while (node) {
++        
++            struct MdbRec *pRec = (struct MdbRec *)node->data; 
++            if (strstr(pRec->name,sTrunc) || strstr(pRec->msg,sTrunc)) {
++            /* Usign snprintf() allows us to pass the data we found to 
++             * a string so that we can send it across the wire.
++             * 
++             * sndMsgSize ensures that we transmit the correct amount of bytes
++             */   
++                sndMsgSize = snprintf(sndBuffer, SNDBUFSIZE, "%4d: {%s} said {%s}\n",num, pRec->name,pRec->msg); 
++                if (send(clntSocket, sndBuffer, sndMsgSize,0) != sndMsgSize)
++                    DieWithError("send() failed");
++                } 
++            
++            node = node->next; 
++            num++; 
++        }      
++        
++        /* Send a blank line */
++        len = strlen(blankLine);
++        if (send(clntSocket, blankLine, len,0) != len)
++            DieWithError("send() failed");
+     }
+     
+     /* Check for any errors that occured while opening the file */
+-- 
+2.7.4
+
+
+From bbbaf6220f2114ba94602b073b3cf43291cecb62 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Thu, 30 Mar 2017 23:25:46 -0400
+Subject: [PATCH 08/15] changed port number to 33553
+
+---
+ part1/Makefile | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/part1/Makefile b/part1/Makefile
+index 21249dc..31b738c 100644
+--- a/part1/Makefile
++++ b/part1/Makefile
+@@ -28,15 +28,15 @@ clean:
+ 
+ .PHONY: valgrind
+ valgrind:
+-	valgrind --leak-check=full ./mdb-lookup-server mdb-cs3157-short 8888
++	valgrind --leak-check=full ./mdb-lookup-server mdb-cs3157-short 33553
+ 
+ .PHONY: novalgrind
+ novalgrind:
+-	./mdb-lookup-server mdb-cs3157-short 8888
++	./mdb-lookup-server mdb-cs3157-short 33553
+ 
+ .PHONY: connect
+ connect: 
+-	nc 127.0.0.1 8888
++	nc 127.0.0.1 33553
+ 
+ .PHONY: all
+ all: clean default
+-- 
+2.7.4
+
+
+From 6d69f15bf58cc25fc85f31a95feabcbc2dc7c792 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 31 Mar 2017 21:40:39 -0400
+Subject: [PATCH 09/15] Working program, with miniml error checking...still
+ needs to be cleaned up
+
+---
+ part2/http-client.c | 136 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 136 insertions(+)
+ create mode 100644 part2/http-client.c
+
+diff --git a/part2/http-client.c b/part2/http-client.c
+new file mode 100644
+index 0000000..8b039ad
+--- /dev/null
++++ b/part2/http-client.c
+@@ -0,0 +1,136 @@
++
++#include <stdio.h>      /* for printf() and fprintf() */
++#include <sys/socket.h> /* for socket(), connect(), send(), and recv() */
++#include <arpa/inet.h>  /* for sockaddr_in and inet_addr() */
++#include <stdlib.h>     /* for atoi() and exit() */
++#include <string.h>     /* for memset() */
++#include <unistd.h>     /* for close() */
++#include <sys/types.h>
++#include <netdb.h>
++
++#define DATABUFSIZE 4096
++#define HEADBUFSIZE 512
++void DieWithError(char *errorMessage);  /* Error handling function */
++int main(int argc, char *argv[])
++{
++    int sock;                        /* Socket descriptor */
++    struct sockaddr_in serverAddr; /* Echo serverer address */
++    struct hostent *he;
++    unsigned short serverPort;     /* Echo serverer port */
++    char *serverName, *serverIP;
++    char getRequest[100];
++    char headerRequest[100];
++    char blankLine[2] = {'\r','\n'};    /* String to send to echo serverer */
++    unsigned int len;      /* Length of string to echo */
++    char dataBuffer[DATABUFSIZE];
++    char *fileName, *filePath;
++    //int bytesrcvd, totalbytesrcvd;
++    
++    /* Parse the file name from the path.
++     * Incrementing by one get us to the first
++     * character after the last '/'
++     */
++    
++    /* Test for correct number of arguments */
++    if (argc != 4) {
++       fprintf(stderr, "Usage: %s <Host_Name> <Port> <File_Path>\n",
++               argv[0]);
++       exit(1);
++    }
++
++    filePath = argv[3];
++    if ((fileName = strrchr(filePath, '/')+1) == NULL) {
++       fprintf(stderr, "Usage: %s <Host_Name> <Port> <File_Path>\n",
++               argv[0]);
++       fprintf(stderr, "Example: %s www.cs.columbia.edu 80 /index.html\n",
++               argv[0]);
++    }
++   
++    if ( strcmp(argv[2],"80") != 0)
++        /* Force port 80 to be used */
++        fprintf(stderr,  "Bad port: %s - Using port 80 instead.\n", argv[2]);
++        serverPort = atoi("80"); 
++
++    serverName = argv[1];
++    
++    if ((he = gethostbyname(serverName)) == NULL) {
++        DieWithError("gethostbyname failed");
++    }
++    serverIP = inet_ntoa(*(struct in_addr *)he->h_addr);
++    /* Build requests that should be sent to the server */
++    if (sprintf(headerRequest,"Host: %s:%hu",serverName,serverPort) == 0)
++        DieWithError("sprintf failed");  
++    
++    if (sprintf(getRequest,"GET %s HTTP/1.0",filePath) == 0)
++        DieWithError("sprintf failed");  
++    
++    /* Create a reliable, stream socket using TCP */
++    if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
++        DieWithError("socket() failed");
++
++    /* Construct the serverer address structure */
++    memset(&serverAddr, 0, sizeof(serverAddr));     /* Zero out structure */
++    serverAddr.sin_family      = AF_INET;             /* Internet address family */
++    serverAddr.sin_addr.s_addr = inet_addr(serverIP);   /* serverer IP address */
++    serverAddr.sin_port        = htons(serverPort); /* serverer port */
++
++    /* Establish the connection to the echo serverer */
++    if (connect(sock, (struct sockaddr *) &serverAddr, sizeof(serverAddr)) < 0)
++        DieWithError("connect() failed");
++
++    len = strlen(strcat(getRequest,blankLine));
++   // fprintf(stderr, "%s",getRequest);
++    if (send(sock, getRequest, len, 0) != len)
++        DieWithError("send() sent a different number of bytes than expected");
++
++    len = strlen(strcat(headerRequest, blankLine));
++   // fprintf(stderr, "%s",header);
++    if (send(sock, headerRequest, len, 0) != len)
++        DieWithError("send() sent a different number of bytes than expected");
++
++    len = strlen(blankLine);
++   // fprintf(stderr, "%d%s",len,blankLine);
++    if (send(sock, blankLine, len, 0) != len)
++        DieWithError("send() sent a different number of bytes than expected");
++
++    FILE *out = fopen(fileName, "w+");
++    FILE *sd = fdopen(sock,"r");
++    
++    char *serverResponse = fgets(dataBuffer, sizeof(dataBuffer), sd);
++     
++    if ( !strstr(serverResponse,"200" ) )
++        DieWithError(serverResponse);
++    
++    while (strcmp(serverResponse,blankLine) != 0) {
++        serverResponse = fgets(dataBuffer, sizeof(dataBuffer), sd);
++    }
++
++    size_t n;
++
++    while ((n = fread(dataBuffer, 1, sizeof(dataBuffer), sd)) > 0) {
++        if (fwrite(dataBuffer, 1, n, out) != n) 
++           DieWithError("fwrite failed");
++    } 
++
++    close(sock);
++    exit(0);
++
++
++    // /~jae
++    // server should be configured to know the anything after ~ is a user, therefore go to that user's home directory
++    //
++    //make new tcp connections for each "src=" request.
++    //KEEPALIVE connections
++    //
++    //HTTP1.1 requires content length. That length = how many bytes after the blank line is being sent.
++    //
++    //Don't use chrome for testing
++    //
++    //EXAM: 
++    //How many TCP connections made, GET requests made
++    //depending on each HTTP protocol
++    //
++    //
++    //LAB7:
++    //get request considers form action
++}
+-- 
+2.7.4
+
+
+From 498b046fac57c98bf1a6d686e7bff0c1dce7a7cc Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 31 Mar 2017 21:41:44 -0400
+Subject: [PATCH 10/15] Modified this to use fprintf instead of perror
+
+---
+ part2/DieWithError.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+ create mode 100644 part2/DieWithError.c
+
+diff --git a/part2/DieWithError.c b/part2/DieWithError.c
+new file mode 100644
+index 0000000..f407fbf
+--- /dev/null
++++ b/part2/DieWithError.c
+@@ -0,0 +1,8 @@
++#include <stdio.h>  /* for perror() */
++#include <stdlib.h> /* for exit() */
++
++void DieWithError(char *errorMessage)
++{
++    fprintf(stderr,"%s", errorMessage);
++    exit(1);
++}
+-- 
+2.7.4
+
+
+From baabc4ea061ab5d41f6033fe4c2e4667f10e9b11 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 31 Mar 2017 21:42:12 -0400
+Subject: [PATCH 11/15] Makefile, nothing spectacular about it
+
+---
+ part2/Makefile | 38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
+ create mode 100644 part2/Makefile
+
+diff --git a/part2/Makefile b/part2/Makefile
+new file mode 100644
+index 0000000..b0ad798
+--- /dev/null
++++ b/part2/Makefile
+@@ -0,0 +1,38 @@
++
++#
++# Makefile for lab 6, part 1
++#
++
++CC  = gcc
++CXX = g++
++
++INCLUDES = 
++CFLAGS   = -g -Wall $(INCLUDES)
++CXXFLAGS = -g -Wall $(INCLUDES)
++
++LDFLAGS = -g 
++LDLIBS =
++
++.PHONY: default
++default: http-client
++
++http-client: http-client.o DieWithError.o
++# header dependency
++http-client.o: DieWithError.o
++DieWithError.o:
++
++.PHONY: clean
++clean:
++	rm -f *.o *.html *.jpg *~ a.out core http-client
++
++.PHONY: valgrind
++valgrind:
++	valgrind --leak-check=full ./http-client www.gnu.org 80 /software/make/manual/make.html
++
++.PHONY: novalgrind
++novalgrind:
++	./http-client www.gnu.org 80 /software/make/manual/make.html
++
++.PHONY: all
++all: clean default
++
+-- 
+2.7.4
+
+
+From 43e11a2c589d000753a259f36216fec1eef26ab4 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 31 Mar 2017 23:12:08 -0400
+Subject: [PATCH 12/15] Cleaned up and completed
+
+---
+ part2/http-client.c | 125 +++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 69 insertions(+), 56 deletions(-)
+
+diff --git a/part2/http-client.c b/part2/http-client.c
+index 8b039ad..b5108aa 100644
+--- a/part2/http-client.c
++++ b/part2/http-client.c
+@@ -9,54 +9,57 @@
+ #include <netdb.h>
+ 
+ #define DATABUFSIZE 4096
+-#define HEADBUFSIZE 512
++
+ void DieWithError(char *errorMessage);  /* Error handling function */
++
+ int main(int argc, char *argv[])
+ {
+-    int sock;                        /* Socket descriptor */
+-    struct sockaddr_in serverAddr; /* Echo serverer address */
+-    struct hostent *he;
+-    unsigned short serverPort;     /* Echo serverer port */
+-    char *serverName, *serverIP;
+-    char getRequest[100];
+-    char headerRequest[100];
+-    char blankLine[2] = {'\r','\n'};    /* String to send to echo serverer */
+-    unsigned int len;      /* Length of string to echo */
+-    char dataBuffer[DATABUFSIZE];
+-    char *fileName, *filePath;
+-    //int bytesrcvd, totalbytesrcvd;
+-    
+-    /* Parse the file name from the path.
+-     * Incrementing by one get us to the first
+-     * character after the last '/'
+-     */
+-    
++    int sock;                             /* Socket descriptor */
++    struct sockaddr_in serverAddr;        /* Remote server address */
++    struct hostent *he;                   /* Get IP from server name */
++    unsigned short serverPort;            /* Remote server port */
++    char *serverName, *serverIP;          /* www.something.com and IP addr */
++    char getRequest[100];                 /* GET Request Buffer */
++    char headerRequest[100];              /* Header Request Buffer */
++    char blankLine[3] = {'\r','\n','\0'}; /* Blank Line */
++    unsigned int len;                     /* Length of GET request strings */ 
++    char dataBuffer[DATABUFSIZE];         /* Buffer for received data */
++    char *fileName, *filePath;            /* File path and file name */
++    size_t bytesRead;                     /* Bytes Read by fread() */
++    char *ok = "200";                     /* Error checking status code */
++    char *serverResponse;                 /* Used to store header lines */
++     
+     /* Test for correct number of arguments */
+     if (argc != 4) {
+-       fprintf(stderr, "Usage: %s <Host_Name> <Port> <File_Path>\n",
++       fprintf(stderr, "usage: %s <Host_Name> <Port> <File_Path>\n",
++               argv[0]);
++       fprintf(stderr, "   ex) %s www.cs.columbia.edu 80 /index.html\n",
+                argv[0]);
+        exit(1);
+     }
+ 
++    /* Parse the file name from the path */
+     filePath = argv[3];
+-    if ((fileName = strrchr(filePath, '/')+1) == NULL) {
+-       fprintf(stderr, "Usage: %s <Host_Name> <Port> <File_Path>\n",
++    if ((fileName = strrchr(filePath, '/')) == NULL) {
++       fprintf(stderr, "usage: %s <Host_Name> <Port> <File_Path>\n",
+                argv[0]);
+-       fprintf(stderr, "Example: %s www.cs.columbia.edu 80 /index.html\n",
++       fprintf(stderr, "   ex) %s www.cs.columbia.edu 80 /index.html\n",
+                argv[0]);
++       exit(1);
+     }
+-   
++  
++    /* Force port 80 to be used */
+     if ( strcmp(argv[2],"80") != 0)
+-        /* Force port 80 to be used */
+         fprintf(stderr,  "Bad port: %s - Using port 80 instead.\n", argv[2]);
+         serverPort = atoi("80"); 
+ 
+-    serverName = argv[1];
+-    
++    /* Getting ip address from hostname */
++    serverName = argv[1]; 
+     if ((he = gethostbyname(serverName)) == NULL) {
+         DieWithError("gethostbyname failed");
+     }
+     serverIP = inet_ntoa(*(struct in_addr *)he->h_addr);
++    
+     /* Build requests that should be sent to the server */
+     if (sprintf(headerRequest,"Host: %s:%hu",serverName,serverPort) == 0)
+         DieWithError("sprintf failed");  
+@@ -78,59 +81,69 @@ int main(int argc, char *argv[])
+     if (connect(sock, (struct sockaddr *) &serverAddr, sizeof(serverAddr)) < 0)
+         DieWithError("connect() failed");
+ 
++    /* Sending the initial GET request */
+     len = strlen(strcat(getRequest,blankLine));
+-   // fprintf(stderr, "%s",getRequest);
+     if (send(sock, getRequest, len, 0) != len)
+         DieWithError("send() sent a different number of bytes than expected");
+ 
++    /* Sending the first header request */
+     len = strlen(strcat(headerRequest, blankLine));
+-   // fprintf(stderr, "%s",header);
+     if (send(sock, headerRequest, len, 0) != len)
+         DieWithError("send() sent a different number of bytes than expected");
+ 
++    /* Sending the blank line */
+     len = strlen(blankLine);
+-   // fprintf(stderr, "%d%s",len,blankLine);
+     if (send(sock, blankLine, len, 0) != len)
+         DieWithError("send() sent a different number of bytes than expected");
+ 
+-    FILE *out = fopen(fileName, "w+");
++    /* Open a file descriptor that will serve as our output file
++     * 'filename+1' allows us to grab just the file name, without
++     * the leading '/' to correctly name our output file.
++     */
++    FILE *out = fopen(fileName+1, "w+");
++    if (out == NULL)
++        DieWithError(fileName+1);
++
++    /* Wrap the socket in a file descriptor to use fgets and fread */
+     FILE *sd = fdopen(sock,"r");
++    if (sd == NULL)
++        DieWithError("failed to wrap socket in FILE *");
+     
+-    char *serverResponse = fgets(dataBuffer, sizeof(dataBuffer), sd);
+-     
+-    if ( !strstr(serverResponse,"200" ) )
++    /* First line recieved from the remote server */
++    serverResponse = fgets(dataBuffer, sizeof(dataBuffer), sd);
++    
++    /* Checking for 200 OK */
++    if ( !strstr(serverResponse,ok ) )
+         DieWithError(serverResponse);
+     
++    /* Read the rest of the header response up to and including the 
++     * blank line.
++     */
+     while (strcmp(serverResponse,blankLine) != 0) {
+         serverResponse = fgets(dataBuffer, sizeof(dataBuffer), sd);
+     }
+ 
+-    size_t n;
+-
+-    while ((n = fread(dataBuffer, 1, sizeof(dataBuffer), sd)) > 0) {
+-        if (fwrite(dataBuffer, 1, n, out) != n) 
++    /* Read the incoming data in chunks of 4096 bytes
++     * and store them in our output file.
++     */
++    while ((bytesRead = fread(dataBuffer, 1, sizeof(dataBuffer), sd)) > 0) {
++        if (fwrite(dataBuffer, 1, bytesRead, out) != bytesRead) 
+            DieWithError("fwrite failed");
+     } 
+ 
++    /* Catch any errors that might've came about wile
++     * 'out' or 'sd' were open.
++     */
++    if (ferror(sd))
++        DieWithError("fread failed");
++
++    if (ferror(out))
++        DieWithError("fwrite failed");
++
++    /* Close out file descriptors */
+     close(sock);
++    fclose(sd);
++    fclose(out);
+     exit(0);
+ 
+-
+-    // /~jae
+-    // server should be configured to know the anything after ~ is a user, therefore go to that user's home directory
+-    //
+-    //make new tcp connections for each "src=" request.
+-    //KEEPALIVE connections
+-    //
+-    //HTTP1.1 requires content length. That length = how many bytes after the blank line is being sent.
+-    //
+-    //Don't use chrome for testing
+-    //
+-    //EXAM: 
+-    //How many TCP connections made, GET requests made
+-    //depending on each HTTP protocol
+-    //
+-    //
+-    //LAB7:
+-    //get request considers form action
+ }
+-- 
+2.7.4
+
+
+From b29ddb06673eedb827ddb28926f5efb5e781cbe0 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 31 Mar 2017 23:17:48 -0400
+Subject: [PATCH 13/15] README.txt file
+
+---
+ README.txt | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+ create mode 100644 README.txt
+
+diff --git a/README.txt b/README.txt
+new file mode 100644
+index 0000000..4d3b31f
+--- /dev/null
++++ b/README.txt
+@@ -0,0 +1,12 @@
++This file should contain:
++
++  - Michael Introini
++  - mbi2105
++  - lab 6
++  - description:
++  - Part 1: Working as per the requirements.
++  - Part 2: Working as per the requirements.
++    I decided to force the use of port 80 in my solution. However, 
++    the user is notified that an incorrect port number was entered.
++
++ 
+-- 
+2.7.4
+
+
+From 29654488a01aa34f2739a718a6d3e1dcec727f64 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 31 Mar 2017 23:24:22 -0400
+Subject: [PATCH 14/15] Changed perror to fprintf
+
+---
+ part1/DieWithError.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/part1/DieWithError.c b/part1/DieWithError.c
+index a00f377..c56afec 100644
+--- a/part1/DieWithError.c
++++ b/part1/DieWithError.c
+@@ -3,6 +3,6 @@
+ 
+ void DieWithError(char *errorMessage)
+ {
+-    perror(errorMessage);
++    fprintf(stderr, "%s", errorMessage);
+     exit(1);
+ }
+-- 
+2.7.4
+
+
+From 034ba8acd358cd49a6203f727bca3dd70e488b57 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 31 Mar 2017 23:24:50 -0400
+Subject: [PATCH 15/15] expanded explination of Part 1
+
+---
+ README.txt | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/README.txt b/README.txt
+index 4d3b31f..d262a59 100644
+--- a/README.txt
++++ b/README.txt
+@@ -5,6 +5,8 @@ This file should contain:
+   - lab 6
+   - description:
+   - Part 1: Working as per the requirements.
++    I've included a header file named "includes.h" that contains
++    all of the required header files.
+   - Part 2: Working as per the requirements.
+     I decided to force the use of port 80 in my solution. However, 
+     the user is notified that an incorrect port number was entered.
+-- 
+2.7.4
+

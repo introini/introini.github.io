@@ -1,0 +1,426 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Short Sectioned Assignment
+% LaTeX Template
+% Version 1.0 (5/5/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Frits Wenneker (http://www.howtotex.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[paper=a4, fontsize=11pt]{scrartcl} % A4 paper and 11pt font size
+
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage{fourier} % Use the Adobe Utopia font for the document - comment this line to return to the LaTeX default
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage{amsfonts,amsthm,amssymb} % Math packages
+\usepackage[fleqn]{mathtools}
+\usepackage{caption}
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+\usepackage{float}
+\restylefloat{table}
+\usepackage{color}
+\usepackage{sectsty} % Allows customizing section commands
+\sectionfont{\centering \normalfont} % Make all sections centered, the default font and small caps
+\subsectionfont{\fontsize{14}{15}\centering \normalfont} % Make all sections centered, the default font and small caps
+\subsubsectionfont{\underline\itshape\fontsize{13}{15}\raggedright\normalfont}
+
+\usepackage{fancyhdr} % Custom headers and footers
+\pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+\fancyhead{} % No page header - if you want one, create it in the same way as the footers below
+\fancyfoot[L]{} % Empty left footer
+\fancyfoot[C]{} % Empty center footer
+\fancyfoot[R]{\thepage} % Page numbering for right footer
+\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{13.6pt} % Customize the height of the header
+\newcommand*{\oldneg}{\mathord{\sim}}
+
+\setlength\parindent{0pt} % Removes all indentation from paragraphs - comment this line for an assignment with lots of text
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+
+\title{	
+\normalfont \normalsize 
+\textsc{Discrete Math} \\ [25pt] % Your university, school and/or department name(s)
+\horrule{0.5pt} \\[0.2cm] % Thin top horizontal rule
+\large Homework 3 \\ % The assignment title
+\horrule{2pt} \\[0.2cm] % Thick bottom horizontal rule
+}
+\author{Michael Introini} % Your name
+
+\date{\normalsize{June 12, 2017}} % Today's date or a custom date
+
+\begin{document}
+
+\maketitle % Print the title
+
+\section*{Chapter 5}
+\horrule{0.5pt} \\ % Thin top horizontal rule
+\subsection*{Section 5.1}
+\subsubsection*{Problem 14}
+Prove that for every positive integer $n$, $\displaystyle\sum_{k=1}^{n} k2^k=(n-1)2^{n+1}+2$.\\
+
+Expanding the sum we get: \\
+$1\cdot2^1 + 2\cdot2^2 + 3\cdot2^3 + \cdots + n2^n$\\
+We now have: \\
+$n2^n = (n-1)2^{n+1} + 2$\\ 
+\textbf{Basis Step:}\\
+Let $n=1$
+\begin{align*}
+1\cdot 2^1 &= (1-1)2^{1+1} + 2 \nonumber \\
+2 &= 0\cdot 2^2 +2 \nonumber \\
+2 &= 0 + 2 \nonumber \\ 
+2 &= 2 \nonumber \\
+\end{align*}
+
+\textbf{Inductive Step:}\\
+Assume then, that this will work for some arbitrary number $k$. We would then say that $k2^k = (k-1)2^{k+1} + 2$. To prove that this holds, we should also prove that the equality holds for $k+1$. We then get:\\
+$k2^k + (k+1)2^{k+1} = ((k+1)-1)2^{(k+1)+1} + 2$, we can also replace $k2^k$ with $(k-1)2^{k+1} + 2$ since we already have proven that they are equal to each other. We can now prove the following equality:
+\begin{align*}
+(k-1)2^{k+1} + 2 + (k+1)2^{k+1} &= ((k+1)-1)2^{(k+1)+1} + 2\\
+k2^{k+1} + 2 + k2^{k+1} &= k2^{k+2} + 2\\
+k2^{k+2} + 2 &= k2^{k+2} + 2\\
+\end{align*}
+This completes the inductive step.\\
+
+\textbf{Conclusion}\\
+By Mathematical induction $\displaystyle\sum_{k=1}^{n}k2^k = (n-1)2^{n+1} + 2$ for any fixed integer $k$.\\ 
+\subsubsection*{Problem 20}
+Prove that $3^n<n!$ if $n$ is an integer greater than 6.
+
+\textbf{Basis Step:}
+Let $n=7$, then we can see that the inequality is true for $P(7)$. Though we also need to consider the case for a number smaller than 6, and 6 itself.
+
+\textbf{Case: n>6}\\
+\begin{align*}
+3^7 &? 7!\\
+2187 &< 5040\\
+\end{align*}
+
+\textbf{Case: n<6}\\
+\begin{align*}
+3^2 &? 2!\\
+9 &> 4\\
+\end{align*}
+
+\textbf{Case: n=6}\\
+\begin{align*}
+3^6 &? 6!\\
+729 &> 720\\
+\end{align*}
+
+The inequality holds true for the basis step.\\
+
+\textbf{Inductive Step:}
+In order for us to prove this for every integer greater than 6, we assume that it holds true for an arbitrary integer $k$, where $k>6$. We can now prove that this also holds true for $k+1$.//
+
+\begin{align*}
+3^{k+1} &< (k+1)k!\\
+3^{k+1} = 3^k \cdot 3^1 &< 3^k \cdot k!\\ 
+3^k \cdot k! &< (k+1)k!\\
+\end{align*}
+
+This concludes the inductive step.\\
+
+\textbf{Conclusion:}\\
+The  inequality holds true for any number $\geq 7$.\\
+
+\subsubsection*{Problem 40}
+Prove that if $A_1, A_2, \cdots , A_n$ and $B$ are sets, then\\
+$(A_1 \cap A_2 \cap \cdots \cap A_n) \cup B$\\
+$ = (A_1 \cap B) \cup (A_2 \cap B) \cup \cdots \cup (A_n \cap B)$\\
+
+\textbf{Basis Step:}\\
+Let $P(n)\cup Q = (A_1 \cap A_2 \cap \cdots \cap A_n) \cup B$\\
+where $P(n)$ is the set of all subsets $A_n$, and $Q$ is the set $B$.\\
+Then for $P(1)\cup Q$ we have $A_1 \cup B = A_1 \cup B$.\\
+This concludes the Basis Step.\\
+
+\textbf{Inductive Step:}\\
+Assume that for some arbitrary set $P(k)$ the union of the intersection of all sets up to $k$ and the set $B$, namely $(A_1 \cap A_2 \cap \cdots \cap A_k) \cup B$ is the intersection of each set $A$ union $B$. \\
+
+We can prove this by showing that the same holds true for $P(k+1)$.\\ 
+\begin{align*}
+(A_1\cap A_2\cap \cdots \cap A_k \cap A_{k+1})\cup B &= (A_1 \cup B) \cap (A_2 \cup B) \cap \cdots \cap (A_k \cup B) \cap (A_{k+1} \cup B)\\ 
+(A_1 \cup B) \cap (A_2 \cup B) \cap \cdots \cap (A_k \cup B) \cap (A_{k+1} \cup B) &= (A_1 \cup B) \cap (A_2 \cup B) \cap \cdots \cap (A_k \cup B) \cap (A_{k+1} \cup B)\\
+\end{align*}
+
+This concludes the inductive step.\\
+
+\textbf{Conclusion:}\\
+The equality holds for any subset of the set $A$,\\
+\subsection*{Section 5.2}
+\subsubsection*{Problem 12}
+Use strong induction to show that every positive integer $n$
+can be written as a sum of distinct powers of two, that is,
+as a sum of a subset of the integers $2^0=1$, $2^1=2$, $2^2=4$,
+and so on. [Hint: For the inductive step, separately consider
+the case where $k + 1$ is even and where it is odd.
+When it is even, note that $\frac{(k + 1)}{2}$ is an integer.]
+
+\textbf{Basis Step:}\\
+Let $P(1) = P(n)$, then $1 = 2^0$,  this concludes the Basis Step.
+
+\textbf{Inductive Step:}\\
+We need to consider two cases for this step. The case when $k+1$ is an even number, and the case where $k+1$ is off. We note that when $k+1$ is even, $\frac{(k+1)}{2}$ is an integer. Then by the inductive hypothesis we can express this as the sum of distinct powers of 2. If we multiply this by 2, we get the sum distinct powers of two which equal $(k+1)$.
+
+In the case where $(k+1)$ is an odd number, we know can assert that $k$ is even, and by the inductive hypothesis that it can be expressed as a sum of distinct powers of two. This is true because $2^0$ is not even and we can use it to form part of the sum.\\
+
+This concludes the inductive step.\\ 
+
+\subsection*{Section 5.3}
+\subsubsection*{Problem 4b}
+Find $f(2), f(3), f(4),$ and $f(5)$ if $f$ is defined recursively
+by $f(0) = f(1) = 1$ and for $n = 1, 2, \ldots$
+
+\textbf{b)} $f(n + 1) = f(n)f(n-1)$\\
+
+$f(2) = f(1) \cdot f(0) = 1$\\
+$f(3) = f(2) \cdot f(1) = 1$\\
+$f(4) = f(3) \cdot f(2) = 1$\\
+$f(5) = f(4) \cdot f(3) = 1$\\
+
+\subsubsection*{Problem 8b}
+Give a recursive definition of the sequence $\{a_n\}, n = 1, 2, 3, \ldots$ if\\
+\textbf{b)} $a_n = 1+(-1)^n$\\
+
+$a_0 = 1 + (-1)^0 = 2 $\\
+$a_1 = 1 + (-1)^1 = 0 $\\
+$a_2 = 1 + (-1)^2 = 2 $\\
+$a_3 = 1 + (-1)^3 = 0 $\\
+$a_4 = 1 + (-1)^4 = 2 $\\
+
+Noting that the sequence alternates between 0 and 2, for every odd and even number respectively, we could say the following:\\
+
+The first part of the definition is $a_{2n} = 2$, and the second part $a_{2n+1} = 0$ for all nonnegative integers.\\ 
+\subsubsection*{Problem 12}
+Prove $f_1^2 + f_2^2 + \cdots + f_n^2 = f_nf_{n+1}$ when $n$ is a positive integer.\\
+
+Basis Step:\\
+let $f_1^2 = 0^2$, $f_2^2 = 1^2$\\
+then, $0^2+1^2 = 0^2 \cdot 1^2 = 1$\\
+
+Inductive Step:\\
+We assume that $f_1^2 + f_2^2 + \cdots + f_{k-1}^2 = f_{k-1}f_{k}$ is true.\\
+then, we want to prove $f_1^2 + f_2^2 + \cdots + f_{k-1}^2 + f_{k-1}^2 = f_kf_{k+1}$\\
+We can replace $f_1^2 + f_2^2 + \cdots + f_{k-1}^2$ by $f_{k-1}f_{k}$\\
+$f_{k-1}f_{k} + f_k^2 = f_kf{k+1}$\\
+$f_k(f_{k-1}+f_k) = f_kf_{k+1}$\\
+\textbf{This proves our hypothesis and concludes the inductive step} \\
+
+\subsection*{Section 5.4}
+\subsubsection*{Problem 10}
+Give a recursive algorithm for finding the maximum of a finite set of integers, making use of the fact that the maximum of $n$ integers is the larger of the last integer in the list and the maximum of the first $n-1$ integers in the list.\\
+
+
+\textbf{Solution:} For this algorithm to work recursively, we would need to compare the last integer to every other integer. The procedure would look something like the following:\\
+
+given a finite list of integers of size $n$\\
+\textbf{procedure: }\textit{max}(sequence of integers ($a_k, a_{k+1}, \ldots a_n$))\\
+\textbf{if: } $a_n = 1$ \textbf{then return} $a_n$\\
+\textbf{else:}\\
+first = $a_n - a_{n-1}$
+\textbf{if: } $a_n > first$\\
+\textbf{return:} \textit{max}(sequence of integers($a_{k+1}, a_{k+2}, \ldots a_n$))
+
+\section*{Chapter 6}
+\subsection*{Section 6.1}
+\subsubsection*{Problem 22}
+How many positive integers less than 1000\\
+\textbf{a)} are divisible by 7?\\
+$999 \div 7 = 142.71$, we round this down to conclude that there are $142$ positive integers divisible by 7 in 999.\\
+
+\textbf{b)} are divisible by 7 but not by 11?\\
+Since there are $142$ number that can be divided by 7, we need to count how many of those can be divided by 11 so that we can exclude them.\\
+Therefore, since $142/11 = 12$, we conclude that there are $130$ numbers divisible by 7, but not by 11.\\
+
+\textbf{c)} are divisible by both 7 and 11?\\
+This is calculated above as $12$
+
+\textbf{d)} are divisible by either 7 or 11?\\
+In order to make sure that we don't count some numbers twice we need to consider numbers divided by 7, numbers divided by 11, and subtract there sum by the numbers divided by both.\\
+\textbf{Can be divided by 7: } 142 \\
+\textbf{Can be divided by 11: } 90\\
+\textbf{Can be divided by both: } 12\\
+
+$142 + 90 - 12 = 220$\\
+We can conclude that there are 221 numbers that can be divided by 7 or 11. \\
+
+\textbf{e)} are divisible by exactly one of 7 and 11?\\
+Here we need to double the amount of numbers that need to be excluded from the set since we're being asked for exactly one of 7 and 11. Then we get $142+90-24 = 208$ possibilities.\\
+
+\textbf{f)} are divisible by neither 7 nor 11?\\
+This is inverse of the question C, where we are being asked for all numbers that can't be divided be 7 or 11. The answer is: $999-220 = 779$\\
+
+\textbf{g)} have distinct digits?\\
+This needs to be broken down into sets of numbers with distinct digits:\\
+
+\textbf{Case 1:}\\
+\[0-9\] Is one set. 
+
+\textbf{Case 2:}\\
+\[11-99\] Here we need to exclude repeating numbers 11 $\cdots$ 99, so we end up with 81 distinct numbers from 10-98.\\
+
+\textbf{Case 3:}\\
+\[100-999\] This can be broken down using the product rule for each of digit. In the 100s place there are 9 choices [1-9], the 10s place also has 9 choices because it can't be the same number as the first digit, but we can include 0 as an option. The 1s place has 8 choices since it can neither be a 9 or, 0, or 1. Which gives ua a total of 648 possibilities for 3 digit numbers from 102-987.
+
+\textbf{Conclusion:}\\
+There are 738 numbers with distinct digits.\\
+
+\textbf{h)} have distinct digits and are even?\\
+Similarly, this can be broken down into cases.\\
+
+\textbf{Case 1:}\\
+\[0-8\] There are 4 possibilities.
+
+\textbf{Case 2:}\\
+\[10-98\] We'll have 45 possible number even number combinations, but we need to exclude 22, 44, 66, 88 since those are not distinct. Then we end up with 41. 
+
+\textbf{Case 3:}\\
+\[102-986\] This set of numbers also needs to be considered in different cases.\\
+To get an even number, the last digit must always be even. However, we must also consider cases for the other digits. So we get the following sets:\\
+
+\textit{odd, odd, even: } $5x5x4$\\
+\textit{odd, even, even: } $5x5x4$ (we can include 0 in this case as an even number)\\
+\textit{even, odd, even: } $4x5x4$\\
+\textit{even, even, even: } $4x4x3$\\(we can include 0 in this case as an even number
+
+In total, we have 328 distinct integers from 102-986.\\
+\textbf{Conclusion:} there are 373 distinct even numbers less than 1000.\\
+\subsubsection*{Problem 46}
+In how many ways can a photographer at a wedding arrange 6 people in a row from a group of 10 people, where the bride and the groom are among these 10 people, if\\
+\textbf{a)} the bride must be in the picture?\\
+If the bride has to be in the picture, it means that we only have other people we can include in the row. For each position we will assign a person from the remaining 9.\\ 
+Then we have:\\ 
+$\frac{9!}{5!(9-5)!} * 6 = 756$ where 6 is the number of positions the bride can be in.\\
+
+\textbf{b)} both the bride and groom must be in the picture?\\
+Since the bride AND the groom need to be in the picture, the total number of remaining guests is 8 for 4 spots. However, we also need to consider the different ways where the bride and groom can be placed in the picture.\\
+
+So we then have $\frac{8!}{4!4!} * 12$ possibilities for the picture.
+
+\textbf{c)} exactly one of the bride and the groom is in the picture?\\
+If there can only be one of each, then there are $\frac{8!}{5!(8-5)!} * 6$ pictures where the bride is in the picture, but the groom is not. and then there are $\frac{8!}{5!(8-5)!} * 6$ pictures where the groom is in, but the bride is not.\\
+
+In total there are $\left(\frac{8!}{5!(8-5)!} * 6\right)*2$ total possibilities.\\
+\subsection*{Section 6.2}
+\subsubsection*{Problem 4}
+A bowl contains 10 red balls and 10 blue balls. A woman selects balls at random without looking at them.\\
+
+\textbf{a)} How many balls must she select to be sure of having at least three balls of the same color?\\
+Using the formula given in the chapter, $N = k(r-1)+1$ we see that for $k=2$ colors we need to get $r=3$ balls of the same type. Therefore $N = 2(2)+1 = 5$\\ 
+
+\textbf{b)} How many balls must she select to be sure of having at least three blue balls?\\
+To ensure we have at least 3, she must choose no less than 13 balls.\\
+
+\subsubsection*{Problem 10} 
+Let$(x_i,y_i)$,$i = 1,2,3,4,5$, be a set of five distinct points with integer coordinates in the $xy$ plane. Show that the midpoint of the line joining at least one pair of these points has integer coordinates.
+
+The midpoint of a line between two points is defined as $\left(\frac{(x_1+x_2)}{2}, \frac{(y_1+y_2)}{2}\right)$. We then consider the fact that in order to land at a point with integer coordinates, the parity of $x_1, y_1$ and $x_2, y_2$ must be equal. Therefore, we have 4 different cases of parity.\\
+
+(odd, odd), (even, odd), (odd, even), and (even, even).\\
+
+Since there are 5 distinct points, by the pigeonhole principle, at least one of the midpoints between them has integer values.\\
+
+\subsubsection*{Problem 14} 
+
+\textbf{a)} Show that if seven integers are selected from the first 10 positive integers, there must be at least two pairs of these integers with the sum 11.\\
+Pairing each number where their sum is 11 we get:\\
+(1,10), (2, 9), (3,8), (4,7), and (5,6))\\ 
+Suppose we chose 1 through 6, we would then have $\{1,2,3,4,5,6\}$, neither of which add up to 11, but the next number we chose will invariable have a number in the set that together add up to 11.
+
+\textbf{b)} Is the conclusion in part (a) true if six integers are selected rather than seven?\\
+
+No, the first part my answer proves that.\\
+\subsubsection*{Problem 26}
+Show that in a group of five people (where any two people are either friends or enemies), there are not necessarily three mutual friends or three mutual enemies.\\
+If there are 5 people in a group, let A be one person, then A can have 2 or more friends, or 2 or more enemies by the PHP. Suppose then, B and C are friends of A, if B and C are enemies, then there isn't a group of three mutual friends between them.\\
+ 
+\subsection*{Section 6.3}
+\subsubsection*{Problem 6}
+Find the value of each of these quantities.\\
+\textbf{a)} C(5,1) $\frac{5!}{1!4!}$\\ 
+\textbf{b)} C(5,3) $\frac{5!}{3!2!}$\\
+\textbf{c)} C(8,4) $\frac{8!}{4!4!}$\\
+\textbf{d)} C(8,8) $\frac{8!}{8!0!}$\\
+\textbf{e)} C(8,0) $\frac{8!}{0!8!}$\\
+\textbf{f)} C(12,6) $\frac{12!}{6!6!}$\\
+
+\subsubsection*{Problem 12}
+How many bit strings of length 12 contain\\
+\textbf{a)} exactly three 1s? \\
+C(12,3) = $\frac{12!}{3!9!}$\\
+
+\textbf{b)} at most three 1s?\\
+There are 4 cases to consider here.\\
+\textbf{Case 1:} No 1s\\
+1\\
+\textbf{Case 2:} One 1\\
+C(12,1) = $\frac{12!}{1!11!}$\\
+\textbf{Case 2:} Two 1s\\
+C(12,2) = $\frac{12!}{2!10!}$\\
+\textbf{Case 2:} Three 1s\\
+C(12,3) = $\frac{12!}{3!9!}$\\
+
+\textbf{Conclusion:} There are C(12,1) + C(12,2) + C(12,3) bit strings.\\
+
+\textbf{c)} at least three 1s?\\
+The total number of possibilities $2^12 - \frac{12!}{3!9!}$ \\
+
+\textbf{d)} an equal number of 0s and 1s?\\
+C(12,6) = $\frac{12!}{6!6!}$\\
+
+\subsubsection*{Problem 16}
+How many subsets with an odd number of elements does a set with 10 elements have?
+Since there are 5 distinct odd numbers from 1-10, we can say that each subset in a set of 10 elements will have 1, 3, 5, 7, or 9 elements in it. Therefore, there are C(10,1) + C(10,3) + C(10,5) + C(10,7) + C(10,9) subsets in total.\\
+ 
+\subsubsection*{Problem 18}
+A coin is flipped eight times where each flip comes up
+either heads or tails. How many possible outcomes\\
+
+\textbf{a)} are there in total?\\
+$2^8$ different possible outcomes.\\
+
+\textbf{b)} contain exactly three heads?\\
+C(8,3) = $\frac{8!}{5!3!}$\\
+
+\textbf{c)} contain at least three heads?\\
+$2^8 - \frac{8!}{5!3!}$\\
+
+\textbf{d)} contain the same number of heads and tails?\\
+C(8,4) = $\frac{8!}{4!4!}$\\
+
+\subsubsection*{Problem 24}
+How many ways are there for 10 women and six men to stand in a line so that no two men stand next to each other? [Hint: First position the women and then consider possible positions for the men.]\\
+
+There are P(10,10) = $10!$ ways to arrange the women in a line. In order to ensure that no two men stand next to each other in line, we can place a man in between each women. For 6 men and 10 women, this gives us 11 possible positions for each man. Therefore, there are P(11,6) = $\frac{11!}{5!}$ ways to arrange the men.\\
+
+In total, there are P(10,10) x P(11,6) ways to arrange the men and women as required. In other words $10!\cdot\frac{11!}{5!}$ \\
+
+\subsubsection*{Problem 30}
+Seven women and nine men are on the faculty in the mathematics department at a school.
+\textbf{a)} How many ways are there to select a committee of five members of the department if at least one woman must be on the committee?\\
+There are a total of $\frac{16!}{5!11!}$ possible committee that could be created with any number of men or women, if we subtract $\frac{9!}{5!4!}$ then we get all possible committees that comprise of at least 1 woman.\\
+
+Thus: $\frac{16!}{5!11!} - \frac{9!}{5!4!}$ gives us a solution.\\
+
+\textbf{b)} How many ways are there to select a committee of five members of the department if at least one woman and at least one man must be on the committee?\\
+Similarly, we can subtract $\frac{7!}{5!2!}$ from the total above and get a new total which ensures a committee comprised of at least 1 man, and 1 woman.\\
+
+Thus: $\frac{16!}{5!11!} - \frac{9!}{5!4!} -\frac{7!}{5!2!}$ gives us a solution.
+\end{document} 

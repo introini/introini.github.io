@@ -1,0 +1,15 @@
+Worst Case O(1)
+Array Get(index)
+Average Case O(1)
+Array Get()
+
+Hey 3134,
+
+So I wrote this in a response email, but I thought some of you might be also interested in it. It's basically a pretty common-sense method for revising for coding problems, if you found yourself struggling with those on the midterm. I wrote it in the context of a tree traversal coding problem:
+
+So what you could do for that is to just sit down and try writing algorithms on paper that involve tree traversals. For the midterm there was isFull and notDegenerate (or something like that). It would be a good start to begin with those. Don't look at the answers, just try writing either algorithm first. Maybe you can't do it yet, but write whatever you can. Once you've written something, then go fix it up in Eclipse or whatever you're using first, before looking at the solution.
+Then you can work on the other problem with more confidence. You can try a few more examples afterwards, it's easy to make your own. For instance:
+- suppose there is a binary tree whose nodes have an instance variable data of type int. Then write a function isOdd that returns false if any node has an even int, true otherwise. 
+- write a function that, for a given binary tree, checks if the parent's data is greater than the sum of data of its children. Return false if any child/children's sum is larger than its/their parent.
+Simple cases like these, similar to what you saw on the midterm. The most important thing is really to just try writing it on Notepad or a piece of paper before doing it in an IDE, before looking up the answer. 
+Good luck!

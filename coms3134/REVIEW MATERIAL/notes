@@ -1,0 +1,72 @@
+
+
+
+Tower of Hanoi (Recursion):
+Move N-1 disks to the Temp peg, using the destination as the intermediate temp,
+then move the N-1 disks to the final destination using the initial peg as the
+temp peg.
+
+Tower of Hanoi is 2^N
+
+CHAPTER 3
+Page 63
+Abstract Data Types (ADT)
+--List Example (Used a lot)
+--Array Lists
+--Linked Lists
+
+ADT: Doesn't necessarily have a structure associated with it. List of operations
+that we want to be able to perform.
+Very much like an Interface.
+
+List: Elements have some sort of order to them.
+--get(i)
+--set(i)
+--add(i)
+--remove(i)
+
+WEEK 3 - DAY 2
+Iterator's job is to move through a collection...Forward.
+--Has 3 methods
+---Boolean - hasNext();
+---next(); // Does 2 things
+----What location are we at?
+----Moves to the next location.
+---remove(); // Removes element.
+
+List Interface extends Collection
+-Any method in Collection also exists in List.
+
+ListIterator
+--Can Move forward AND backwards.
+
+Big-O Costs:
+Insert has a cost greater than O(1); it is O(N)
+
+-ArrayList
+--ADVANTAGE: Calls to Get or Set take constantant time, so they're very fast
+--DISADVANTAGE: Calls to Add or Remove can be expensive
+--Add items to the back is an O(C) cost. In a forloop it is O(N)
+--Add Items to the front is an O(N) cost. In a forloop it is O(N^2)
+--Compute the sum in a list is an O(C) cost. In a forloop it is O(N)
+
+-LinkedList
+--ADVANTAGE: Calls to Add or Remove are cheap provided that the position is known. So much so, that
+methods already exist for addFirst, removeFirst, addLast, removeLast, getFirst, and getLast.
+--DISADVANTAGE: The list is not easily indexable, so regular calls to get and set can be expensive.
+--Add items to the back is an O(C) cost. In a forloop it is O(N)
+--Add Items to the front is an O(C) cost. In a forloop it is O(N)
+--Compute the sum in a list is an O(N) cost. In a forloop it is O(N^2)...use enhanced forloop instead.
+
+Programming by contract: This is what the user guarantees they would give. What it knows it could return. etc
+
+Stack
+- The idea is that you would add and remove elements from one end of the list.
+--Static vs Non-Static nested class
+--Non-Static: Tied to the particular instance
+
+Any class that implements the interface Iterable must provide a...(look this up)
+
+
+
+

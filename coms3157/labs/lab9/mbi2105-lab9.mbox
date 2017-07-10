@@ -1,0 +1,1289 @@
+From cdd29243594c60d53d49807dc9525b34fcf166a5 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sun, 23 Apr 2017 17:46:44 -0400
+Subject: [PATCH 01/24] added another line to test compiline without
+ -fno-elide-constructors flag
+
+---
+ Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Makefile b/Makefile
+index 48455fd..f4cfaee 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,5 +1,6 @@
+ CC  = g++
+ CXX = g++ -O0 -fno-elide-constructors
++#CXX = g++ -O0
+ 
+ # Comment out one of the following 2 lines to enable/disable BASIC4TRACE.
+ INCLUDES = -DBASIC4TRACE
+-- 
+2.7.4
+
+
+From 75171f5a745213e7b441edbdf50b37b53370d47b Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sun, 23 Apr 2017 17:51:42 -0400
+Subject: [PATCH 02/24] added 'const MyString& a, const MyString& b' to add()
+ function call
+
+---
+ test4.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test4.cpp b/test4.cpp
+index 20a290a..858635e 100644
+--- a/test4.cpp
++++ b/test4.cpp
+@@ -2,7 +2,7 @@
+ 
+ #include "mystring.h"
+ 
+-static MyString add(MyString a, MyString b)
++static MyString add(const MyString& a, const MyString& b)
+ {
+     MyString t(" and ");
+     return a + t + b;
+-- 
+2.7.4
+
+
+From 381bf743c1bdb7649d25211a8f35e5cd99536697 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sun, 23 Apr 2017 17:53:15 -0400
+Subject: [PATCH 03/24] Added README.txt with part1(a) completed
+
+---
+ README.txt | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 README.txt
+
+diff --git a/README.txt b/README.txt
+new file mode 100644
+index 0000000..451315c
+--- /dev/null
++++ b/README.txt
+@@ -0,0 +1,41 @@
++This file should contain:
++
++  - Michael Introini
++  - mbi2105
++  - lab 7
++  - description:
++
++  - Part 1: Added the files from Jae's example website to a folder
++    on my home drive ~/html/cs3157/tng
++  - Part 2: Working as per the requirements.
++    Included the "includes.h" file to resolve all required header
++    files.
++ 
++BASIC4TRACE:(0x7ffddcb79a50)->MyString(const char *)    [1] 13,constructor,x
++BASIC4TRACE:(0x7ffddcb79a60)->MyString(const char *)    [2] 14,constructor,y
++BASIC4TRACE:(0x7ffddcb79a90)->MyString(const MyString&) [3] 5,copy constructor,b
++BASIC4TRACE:(0x7ffddcb79a80)->MyString(const MyString&) [4] 5,copy constructor,a
++BASIC4TRACE:(0x7ffddcb799f0)->MyString(const char *)    [5] 7,constructor,t
++BASIC4TRACE:op+(const MyString&, const MyString&)       [6] Entering operator+
++BASIC4TRACE:(0x7ffddcb79990)->MyString()                [7] 8,default constructor,temp
++BASIC4TRACE:(0x7ffddcb79a00)->MyString(const MyString&) [8] 8,copy constructor, 
++                                                            u1 from return temp
++BASIC4TRACE:(0x7ffddcb79990)->~MyString()               [9] 8,destructor,temp
++BASIC4TRACE:op+(const MyString&, const MyString&)       [10] Entering operator+
++BASIC4TRACE:(0x7ffddcb79990)->MyString()                [11] 8,default constructor,temp 
++BASIC4TRACE:(0x7ffddcb79a10)->MyString(const MyString&) [12] 8,copy constructor,
++                                                             u2
++BASIC4TRACE:(0x7ffddcb79990)->~MyString()               [13] 8,destructor,temp
++BASIC4TRACE:(0x7ffddcb79aa0)->MyString(const MyString&) [14] 8,copy constructor,
++                                                             u3
++BASIC4TRACE:(0x7ffddcb79a10)->~MyString()               [15] 9,destructor,u2
++BASIC4TRACE:(0x7ffddcb79a00)->~MyString()               [16] 9,destructor,u1
++BASIC4TRACE:(0x7ffddcb799f0)->~MyString()               [17] 9,destructor,t
++BASIC4TRACE:(0x7ffddcb79a70)->MyString(const MyString&) [18] 16,copy constructor,z
++BASIC4TRACE:(0x7ffddcb79aa0)->~MyString()               [19] 9,destructor,u3
++BASIC4TRACE:(0x7ffddcb79a80)->~MyString()               [20] 9,destructor,a
++BASIC4TRACE:(0x7ffddcb79a90)->~MyString()               [21] 9,destructor,b
++one and two                                             [22] cout << z << endl;
++BASIC4TRACE:(0x7ffddcb79a70)->~MyString()               [23] 19,destructor,z
++BASIC4TRACE:(0x7ffddcb79a60)->~MyString()               [24] 19,destructor,y
++BASIC4TRACE:(0x7ffddcb79a50)->~MyString()               [25] 19,destructor,x
+-- 
+2.7.4
+
+
+From 6c099ae9d7e419c53c452c25e8dee5c5aa8d25d6 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sun, 23 Apr 2017 18:34:18 -0400
+Subject: [PATCH 04/24] Completed part1(b)
+
+---
+ README.txt | 36 ++++++++++++++++++++++++++++++++++--
+ 1 file changed, 34 insertions(+), 2 deletions(-)
+
+diff --git a/README.txt b/README.txt
+index 451315c..1684752 100644
+--- a/README.txt
++++ b/README.txt
+@@ -10,6 +10,8 @@ This file should contain:
+   - Part 2: Working as per the requirements.
+     Included the "includes.h" file to resolve all required header
+     files.
++
++############################ PART 1(A) ###############################
+  
+ BASIC4TRACE:(0x7ffddcb79a50)->MyString(const char *)    [1] 13,constructor,x
+ BASIC4TRACE:(0x7ffddcb79a60)->MyString(const char *)    [2] 14,constructor,y
+@@ -26,8 +28,8 @@ BASIC4TRACE:(0x7ffddcb79990)->MyString()                [11] 8,default construct
+ BASIC4TRACE:(0x7ffddcb79a10)->MyString(const MyString&) [12] 8,copy constructor,
+                                                              u2
+ BASIC4TRACE:(0x7ffddcb79990)->~MyString()               [13] 8,destructor,temp
+-BASIC4TRACE:(0x7ffddcb79aa0)->MyString(const MyString&) [14] 8,copy constructor,
+-                                                             u3
++BASIC4TRACE:(0x7ffddcb79aa0)->MyString(const MyString&) [14] 16,copy constructor,
++                                                             u3 return from add
+ BASIC4TRACE:(0x7ffddcb79a10)->~MyString()               [15] 9,destructor,u2
+ BASIC4TRACE:(0x7ffddcb79a00)->~MyString()               [16] 9,destructor,u1
+ BASIC4TRACE:(0x7ffddcb799f0)->~MyString()               [17] 9,destructor,t
+@@ -39,3 +41,33 @@ one and two                                             [22] cout << z << endl;
+ BASIC4TRACE:(0x7ffddcb79a70)->~MyString()               [23] 19,destructor,z
+ BASIC4TRACE:(0x7ffddcb79a60)->~MyString()               [24] 19,destructor,y
+ BASIC4TRACE:(0x7ffddcb79a50)->~MyString()               [25] 19,destructor,x
++
++############################ PART 1(B) ###############################
++
++BASIC4TRACE: (0x7ffc5c6e5580)->MyString(const char *)    [1] 13,constructor,x
++BASIC4TRACE: (0x7ffc5c6e5590)->MyString(const char *)    [2] 14,constructor,y
++BASIC4TRACE: (0x7ffc5c6e5520)->MyString(const char *)    [3] 7,constructor,t
++BASIC4TRACE: op+(const MyString&, const MyString&)       [4] Entering operator+
++BASIC4TRACE: (0x7ffc5c6e54c0)->MyString()                [5] 8,default constructor,temp
++BASIC4TRACE: (0x7ffc5c6e5530)->MyString(const MyString&) [6] 8,copy constructor,
++                                                             u1 from return temp
++BASIC4TRACE: (0x7ffc5c6e54c0)->~MyString()               [7] 8,destructor,temp
++BASIC4TRACE: op+(const MyString&, const MyString&)       [8] Entering operator+
++BASIC4TRACE: (0x7ffc5c6e54c0)->MyString()                [9] 8,default constructor,temp
++BASIC4TRACE: (0x7ffc5c6e5540)->MyString(const MyString&) [10] 8,copy constructor,
++                                                              u2
++BASIC4TRACE: (0x7ffc5c6e54c0)->~MyString()               [11] 8,destructor,temp
++BASIC4TRACE: (0x7ffc5c6e55b0)->MyString(const MyString&) [12] 16,copy constructor,
++                                                              u3, return from add
++BASIC4TRACE: (0x7ffc5c6e5540)->~MyString()               [13] 9,destructor,u2
++BASIC4TRACE: (0x7ffc5c6e5530)->~MyString()               [14] 9,destructor,u1
++BASIC4TRACE: (0x7ffc5c6e5520)->~MyString()               [15] 9,destructor,t
++BASIC4TRACE: (0x7ffc5c6e55a0)->MyString(const MyString&) [16] 16,copy constructor,z
++BASIC4TRACE: (0x7ffc5c6e55b0)->~MyString()               [17] 9,destructor,u3
++one and two                                              [18] cout << z << endl;
++BASIC4TRACE: (0x7ffc5c6e55a0)->~MyString()               [19] 19,destructor,z
++BASIC4TRACE: (0x7ffc5c6e5590)->~MyString()               [20] 19,destructor,y
++BASIC4TRACE: (0x7ffc5c6e5580)->~MyString()               [21] 19,destructor,x
++
++############################ PART 1(C) ###############################
++
+-- 
+2.7.4
+
+
+From 957ae3c92f6ce40c2c73d7e542ea73a4485c5fc1 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sun, 23 Apr 2017 23:11:10 -0400
+Subject: [PATCH 05/24] Added test5 to list of executables and objects to
+ compile
+
+---
+ Makefile  |  8 ++++----
+ test5.cpp | 14 ++++++++++++++
+ 2 files changed, 18 insertions(+), 4 deletions(-)
+ create mode 100644 test5.cpp
+
+diff --git a/Makefile b/Makefile
+index f4cfaee..d148527 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ CC  = g++
+-CXX = g++ -O0 -fno-elide-constructors
+-#CXX = g++ -O0
++#CXX = g++ -O0 -fno-elide-constructors
++CXX = g++ -O0
+ 
+ # Comment out one of the following 2 lines to enable/disable BASIC4TRACE.
+ INCLUDES = -DBASIC4TRACE
+@@ -12,8 +12,8 @@ CXXFLAGS = -g -Wall $(INCLUDES)
+ LDFLAGS = -g
+ LDLIBS  =
+ 
+-executables = test1 test2 test3 test4
+-objects = mystring.o test1.o test2.o test3.o test4.o
++executables = test1 test2 test3 test4 test5
++objects = mystring.o test1.o test2.o test3.o test4.o test.5
+ 
+ .PHONY: default
+ default: $(executables)
+diff --git a/test5.cpp b/test5.cpp
+new file mode 100644
+index 0000000..6d5e756
+--- /dev/null
++++ b/test5.cpp
+@@ -0,0 +1,14 @@
++#include "mystring.h"
++#include <cassert>
++
++int main() {
++
++    MyString s1("that");
++    MyString s2("this");
++
++    cout << "Asserting " << s1 << " < " << s2 << endl;
++    assert(s1 < s2);
++
++    return 0;
++}
++
+-- 
+2.7.4
+
+
+From 8ae3d6edb317d40ccaf8de3d78467d220798706d Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sun, 23 Apr 2017 23:13:01 -0400
+Subject: [PATCH 06/24] created operator< function
+
+---
+ mystring.cpp | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/mystring.cpp b/mystring.cpp
+index 33b5f6c..1be3ff3 100644
+--- a/mystring.cpp
++++ b/mystring.cpp
+@@ -109,6 +109,26 @@ MyString operator+(const MyString& s1, const MyString& s2)
+     return temp;
+ }
+ 
++// operator<
++/*int operator<(const MyString& s1, const MyString& s2)
++{
++    int i;
++     for (i = 0; s1[i] == s2[i]; i++) {
++         if (s1[i] == '\0')
++             return 1;
++     }
++     if (s1[i]-s2[i] > 0)
++         return 1;
++
++     return 0;
++     
++}*/
++
++int operator<(const MyString& s1, const MyString& s2)
++{
++    int i = strcmp(s1.data,s2.data);
++    return (i < 0); 
++}
+ // put-to operator
+ 
+ ostream& operator<<(ostream& os, const MyString& s)
+-- 
+2.7.4
+
+
+From 4aaa7975d629bee649fc207ab882f4bcbfaceba3 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sun, 23 Apr 2017 23:13:32 -0400
+Subject: [PATCH 07/24] added operator< function declaration
+
+---
+ mystring.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/mystring.h b/mystring.h
+index 39ecc34..4d51ca5 100644
+--- a/mystring.h
++++ b/mystring.h
+@@ -30,7 +30,10 @@ class MyString {
+ 	// operator+
+ 	friend MyString operator+(const MyString& s1, const MyString& s2);
+ 
+-	// put-to operator
++        // operator<
++	friend int operator<(const MyString& s1, const MyString& s2);
++	
++        // put-to operator
+ 	friend ostream& operator<<(ostream& os, const MyString& s);
+ 
+ 	// get-from operator
+-- 
+2.7.4
+
+
+From e2109f6f24d16c8e6818ecdb552a4483f8c34dc6 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sun, 23 Apr 2017 23:15:54 -0400
+Subject: [PATCH 08/24] added operator> func declaration
+
+---
+ mystring.h | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/mystring.h b/mystring.h
+index 4d51ca5..43e541d 100644
+--- a/mystring.h
++++ b/mystring.h
+@@ -33,6 +33,9 @@ class MyString {
+         // operator<
+ 	friend int operator<(const MyString& s1, const MyString& s2);
+ 	
++        // operator>
++	friend int operator>(const MyString& s1, const MyString& s2);
++
+         // put-to operator
+ 	friend ostream& operator<<(ostream& os, const MyString& s);
+ 
+-- 
+2.7.4
+
+
+From dcf6be6f5c3cb6391e30262e74ea1d6b0bb2fa32 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sun, 23 Apr 2017 23:52:02 -0400
+Subject: [PATCH 09/24] added test cases for operator>, and operator==
+
+---
+ test5.cpp | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/test5.cpp b/test5.cpp
+index 6d5e756..9886e24 100644
+--- a/test5.cpp
++++ b/test5.cpp
+@@ -5,10 +5,30 @@ int main() {
+ 
+     MyString s1("that");
+     MyString s2("this");
++    MyString s3(s2);
+ 
+     cout << "Asserting " << s1 << " < " << s2 << endl;
+     assert(s1 < s2);
+ 
++    cout << "Asserting " << s2 << " > " << s1 << endl;
++    assert(s2 > s1);
++
++    cout << "Asserting (string literal rhs) " << s2 << " > " << "hello" << endl;
++    assert(s2 > "hello");
++
++    cout << "Asserting (string literal lhs) " << "hello" << " < " << s2 << endl;
++    assert("hello" < s2);
++
++
++    cout << "Asserting " << s2 << " == " << s1 << endl;
++    assert(s3 == s2);
++
++    cout << "Asserting (string literal rhs) " << s1 << " == " << "that" << endl;
++    assert(s1 == "that");
++
++    cout << "Asserting (string literal lhs) " << "that" << " == " << s1 << endl;
++    assert("that" == s1);
++
+     return 0;
+ }
+ 
+-- 
+2.7.4
+
+
+From e8090a3e7df70a43405a25f1773a19786ab92c03 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sun, 23 Apr 2017 23:52:50 -0400
+Subject: [PATCH 10/24] added func declarations for operator> and operator==
+
+---
+ mystring.h | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/mystring.h b/mystring.h
+index 43e541d..e5f5e9c 100644
+--- a/mystring.h
++++ b/mystring.h
+@@ -36,6 +36,9 @@ class MyString {
+         // operator>
+ 	friend int operator>(const MyString& s1, const MyString& s2);
+ 
++        // operator==
++	friend int operator==(const MyString& s1, const MyString& s2);
++
+         // put-to operator
+ 	friend ostream& operator<<(ostream& os, const MyString& s);
+ 
+-- 
+2.7.4
+
+
+From 6f16dd1a2e04d685e7301089f86fee31f6c5206c Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sun, 23 Apr 2017 23:53:05 -0400
+Subject: [PATCH 11/24] added func definitions for operator> and operator==
+
+---
+ mystring.cpp | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/mystring.cpp b/mystring.cpp
+index 1be3ff3..500fe46 100644
+--- a/mystring.cpp
++++ b/mystring.cpp
+@@ -110,25 +110,25 @@ MyString operator+(const MyString& s1, const MyString& s2)
+ }
+ 
+ // operator<
+-/*int operator<(const MyString& s1, const MyString& s2)
+-{
+-    int i;
+-     for (i = 0; s1[i] == s2[i]; i++) {
+-         if (s1[i] == '\0')
+-             return 1;
+-     }
+-     if (s1[i]-s2[i] > 0)
+-         return 1;
+-
+-     return 0;
+-     
+-}*/
+-
+ int operator<(const MyString& s1, const MyString& s2)
+ {
+     int i = strcmp(s1.data,s2.data);
+     return (i < 0); 
+ }
++
++// operator>
++int operator>(const MyString& s1, const MyString& s2)
++{
++    int i = strcmp(s1.data,s2.data);
++    return (i > 0); 
++}
++
++// opertator==
++int operator==(const MyString& s1, const MyString& s2)
++{
++    int i = strcmp(s1.data,s2.data);
++    return (i == 0); 
++}
+ // put-to operator
+ 
+ ostream& operator<<(ostream& os, const MyString& s)
+-- 
+2.7.4
+
+
+From 6eac9b6cace53351194b594e7ebd05a82fa789a4 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Mon, 24 Apr 2017 00:21:14 -0400
+Subject: [PATCH 12/24] added function definitions for operators !=, <=, and >=
+
+---
+ mystring.cpp | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/mystring.cpp b/mystring.cpp
+index 500fe46..785dfc7 100644
+--- a/mystring.cpp
++++ b/mystring.cpp
+@@ -129,6 +129,25 @@ int operator==(const MyString& s1, const MyString& s2)
+     int i = strcmp(s1.data,s2.data);
+     return (i == 0); 
+ }
++
++// opertator!=
++int operator!=(const MyString& s1, const MyString& s2)
++{
++    return !(s1==s2); 
++}
++
++// opertator<=
++int operator<=(const MyString& s1, const MyString& s2)
++{
++    return (s1 < s2  || s1 == s2); 
++}
++
++// opertator>=
++int operator>=(const MyString& s1, const MyString& s2)
++{
++    return (s1 > s2 || s1 == s2); 
++}
++
+ // put-to operator
+ 
+ ostream& operator<<(ostream& os, const MyString& s)
+-- 
+2.7.4
+
+
+From 738bbde77f7ac0aa749b87da83f67a2506d4bf97 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Mon, 24 Apr 2017 00:21:28 -0400
+Subject: [PATCH 13/24] added function declarations for operators !=, <=, and
+ >=
+
+---
+ mystring.h | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/mystring.h b/mystring.h
+index e5f5e9c..cbb9ccd 100644
+--- a/mystring.h
++++ b/mystring.h
+@@ -39,6 +39,15 @@ class MyString {
+         // operator==
+ 	friend int operator==(const MyString& s1, const MyString& s2);
+ 
++        // operator!=
++	friend int operator!=(const MyString& s1, const MyString& s2);
++
++        // operator<=
++	friend int operator<=(const MyString& s1, const MyString& s2);
++
++        // operator>=
++	friend int operator>=(const MyString& s1, const MyString& s2);
++
+         // put-to operator
+ 	friend ostream& operator<<(ostream& os, const MyString& s);
+ 
+-- 
+2.7.4
+
+
+From 5a16bbe7ba6d2f61afc872dcc6c0dda9d4180c92 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Mon, 24 Apr 2017 00:23:16 -0400
+Subject: [PATCH 14/24] added more test cases for operator overloads, !=, ==,
+ <=, and >=
+
+---
+ Makefile   |  8 ++++----
+ README.txt | 13 +++++++++++++
+ test5.cpp  | 50 ++++++++++++++++++++++++++++++++++++++++++++------
+ 3 files changed, 61 insertions(+), 10 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index d148527..cabcec3 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,10 +1,10 @@
+ CC  = g++
+-#CXX = g++ -O0 -fno-elide-constructors
+-CXX = g++ -O0
++CXX = g++ -O0 -fno-elide-constructors
++#CXX = g++ -O0
+ 
+ # Comment out one of the following 2 lines to enable/disable BASIC4TRACE.
+-INCLUDES = -DBASIC4TRACE
+-#INCLUDES =
++#INCLUDES = -DBASIC4TRACE
++INCLUDES =
+ 
+ CFLAGS   = -g -Wall $(INCLUDES)
+ CXXFLAGS = -g -Wall $(INCLUDES)
+diff --git a/README.txt b/README.txt
+index 1684752..783e235 100644
+--- a/README.txt
++++ b/README.txt
+@@ -71,3 +71,16 @@ BASIC4TRACE: (0x7ffc5c6e5580)->~MyString()               [21] 19,destructor,x
+ 
+ ############################ PART 1(C) ###############################
+ 
++BASIC4TRACE: (0x7ffe82ca1f30)->MyString(const char *)
++BASIC4TRACE: (0x7ffe82ca1f40)->MyString(const char *)
++BASIC4TRACE: (0x7ffe82ca1ee0)->MyString(const char *)
++BASIC4TRACE: op+(const MyString&, const MyString&)
++BASIC4TRACE: (0x7ffe82ca1ef0)->MyString()
++BASIC4TRACE: op+(const MyString&, const MyString&)
++BASIC4TRACE: (0x7ffe82ca1f50)->MyString()
++BASIC4TRACE: (0x7ffe82ca1ef0)->~MyString()
++BASIC4TRACE: (0x7ffe82ca1ee0)->~MyString()
++one and two
++BASIC4TRACE: (0x7ffe82ca1f50)->~MyString()
++BASIC4TRACE: (0x7ffe82ca1f40)->~MyString()
++BASIC4TRACE: (0x7ffe82ca1f30)->~MyString()
+diff --git a/test5.cpp b/test5.cpp
+index 9886e24..f419cae 100644
+--- a/test5.cpp
++++ b/test5.cpp
+@@ -13,15 +13,29 @@ int main() {
+     cout << "Asserting " << s2 << " > " << s1 << endl;
+     assert(s2 > s1);
+ 
+-    cout << "Asserting (string literal rhs) " << s2 << " > " << "hello" << endl;
+-    assert(s2 > "hello");
++    cout << "Asserting " << s3 << " == " << s2 << endl;
++    assert(s3 == s2);
+ 
+-    cout << "Asserting (string literal lhs) " << "hello" << " < " << s2 << endl;
+-    assert("hello" < s2);
++    cout << "Asserting " << s3 << " != " << s1 << endl;
++    assert(s3 != s1);
+ 
++    cout << "Asserting " << s1 << " <= " << s2 << endl;
++    assert(s1 <= s2);
+ 
+-    cout << "Asserting " << s2 << " == " << s1 << endl;
+-    assert(s3 == s2);
++    cout << "Asserting " << s3 << " >= " << s1 << endl;
++    assert(s3 >= s1);
++
++    cout << "Asserting (string literal rhs) " << s1 << " > " << "hello" << endl;
++    assert(s1 > "hello");
++
++    cout << "Asserting (string literal lhs) " << "hello" << " < " << s1 << endl;
++    assert("hello" < s1);
++
++    cout << "Asserting (string literal rhs) " << "this" << " > " << s1 << endl;
++    assert("this" > s1);
++
++    cout << "Asserting (string literal lhs) " << s1 << " < " << "this" << endl;
++    assert(s1 < "this");
+ 
+     cout << "Asserting (string literal rhs) " << s1 << " == " << "that" << endl;
+     assert(s1 == "that");
+@@ -29,6 +43,30 @@ int main() {
+     cout << "Asserting (string literal lhs) " << "that" << " == " << s1 << endl;
+     assert("that" == s1);
+ 
++    cout << "Asserting (string literal rhs) " << s2 << " != " << "that" << endl;
++    assert(s2 != "that");
++
++    cout << "Asserting (string literal lhs) " << "that" << " != " << s2 << endl;
++    assert("that" != s2);
++
++    cout << "Asserting (string literal rhs) " << s3 << " == " << "that" << endl;
++    assert(s3 != "that");
++
++    cout << "Asserting (string literal lhs) " << "that" << " == " << s3 << endl;
++    assert("that" != s3);
++
++    cout << "Asserting (string literal rhs) " << s1 << " >= " << "hello" << endl;
++    assert(s1 >= "hello");
++
++    cout << "Asserting (string literal lhs) " << "hello" << " <= " << s1 << endl;
++    assert("hello" <= s1);
++
++    cout << "Asserting (string literal rhs) " << "this" << " >= " << s1 << endl;
++    assert("this" >= s1);
++
++    cout << "Asserting (string literal lhs) " << s1 << " <= " << "this" << endl;
++    assert(s1 <= "this");
++
+     return 0;
+ }
+ 
+-- 
+2.7.4
+
+
+From 7895988c0f6968de8e82685b4d5c5d783b2c50a1 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 25 Apr 2017 22:22:57 -0400
+Subject: [PATCH 15/24] added operator+= function, and operator+ function was
+ removed from mystring class
+
+---
+ mystring.cpp | 42 +++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 39 insertions(+), 3 deletions(-)
+
+diff --git a/mystring.cpp b/mystring.cpp
+index 785dfc7..c638b2a 100644
+--- a/mystring.cpp
++++ b/mystring.cpp
+@@ -88,7 +88,7 @@ MyString& MyString::operator=(const MyString& rhs)
+ }
+ 
+ // operator+
+-
++/*
+ MyString operator+(const MyString& s1, const MyString& s2)
+ {
+ #ifdef BASIC4TRACE
+@@ -103,11 +103,13 @@ MyString operator+(const MyString& s1, const MyString& s2)
+     temp.len = s1.len + s2.len;
+ 
+     temp.data = new char[temp.len+1];
+-    strcpy(temp.data, s1.data);
+-    strcat(temp.data, s2.data);
++    strcpy(temp.data,s1.data);
++    strcat(temp.data,s2.data);
+ 
+     return temp;
+ }
++*/
++
+ 
+ // operator<
+ int operator<(const MyString& s1, const MyString& s2)
+@@ -148,6 +150,40 @@ int operator>=(const MyString& s1, const MyString& s2)
+     return (s1 > s2 || s1 == s2); 
+ }
+ 
++// operator+=
++MyString& MyString::operator+=(const MyString& rhs)
++{
++    // Create a temp string for the new string
++    MyString temp;
++    delete [] temp.data;
++
++    printf("[------%s------]\n",rhs.data);
++    printf("[len]%d\n[data]->%s\n",len,data);
++    printf("[rhs.len]%d\n[rhs.data]->%s\n",rhs.len,rhs.data);
++
++    // Calculate new string length
++    len += strlen(rhs.data);
++
++    // Set the length of the temp string
++    // Aallocate memory for data
++    temp.len = len;
++    temp.data = new char[len+1];
++
++    strcpy(temp.data,data);
++    strcat(temp.data,rhs.data);
++
++    printf("[temp.len]%d\n[temp.data]->%s\n",temp.len,temp.data);
++
++    delete [] data;
++    data = new char[len+1];
++
++    strcpy(data,temp.data);
++
++    printf("[this.len]%d\n[this.data]->%s\n",len,data);
++    printf("[------------]\n\n");
++    return *this;
++
++}
+ // put-to operator
+ 
+ ostream& operator<<(ostream& os, const MyString& s)
+-- 
+2.7.4
+
+
+From 99b6effee434ca47391820dd9cdd3b28bf5b180a Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 25 Apr 2017 22:23:06 -0400
+Subject: [PATCH 16/24] added operator+= function, and operator+ function was
+ removed from mystring class
+
+---
+ mystring.h | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/mystring.h b/mystring.h
+index cbb9ccd..f86e54a 100644
+--- a/mystring.h
++++ b/mystring.h
+@@ -27,8 +27,7 @@ class MyString {
+ 	// returns the length of the string
+ 	int length() const { return len; }
+ 	
+-	// operator+
+-	friend MyString operator+(const MyString& s1, const MyString& s2);
++//        friend MyString operator+(const MyString& s1, const MyString& s2);
+ 
+         // operator<
+ 	friend int operator<(const MyString& s1, const MyString& s2);
+@@ -54,6 +53,9 @@ class MyString {
+ 	// get-from operator
+ 	friend istream& operator>>(istream& is, MyString& s);
+ 
++        // operator+=
++	MyString& operator+=(const MyString& rhs);
++
+ 	// operator[]
+ 	char& operator[](int i);
+ 
+@@ -66,5 +68,9 @@ class MyString {
+ 
+ 	int len;
+ };
++// operator+	
++MyString operator+(const MyString& lhs, const MyString& rhs);
+ 
+ #endif
++
++
+-- 
+2.7.4
+
+
+From 81c07af54b9ad311d437f117f8ce1a02151ff09e Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 25 Apr 2017 22:23:59 -0400
+Subject: [PATCH 17/24] added function declaration for operator+
+
+---
+ test2.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test2.cpp b/test2.cpp
+index 34e1edb..8a3b936 100644
+--- a/test2.cpp
++++ b/test2.cpp
+@@ -1,5 +1,5 @@
+ #include "mystring.h"
+-
++MyString operator+(const MyString& lhs, const MyString& rhs) { return ((MyString&)rhs)+=lhs; }
+ int main() {
+ 
+     MyString s1("hello ");
+-- 
+2.7.4
+
+
+From 2426084be273f5240066a48af9fa589b36e1426c Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 25 Apr 2017 22:24:53 -0400
+Subject: [PATCH 18/24] added function declaration for operator+
+
+---
+ test4.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test4.cpp b/test4.cpp
+index 858635e..097b923 100644
+--- a/test4.cpp
++++ b/test4.cpp
+@@ -1,7 +1,7 @@
+ // test4.cpp
+ 
+ #include "mystring.h"
+-
++MyString operator+(const MyString& lhs, const MyString& rhs) { return ((MyString&)lhs)+=rhs; }
+ static MyString add(const MyString& a, const MyString& b)
+ {
+     MyString t(" and ");
+-- 
+2.7.4
+
+
+From 807033be82dab13012febf625ceaac1a4e9ddd6a Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 25 Apr 2017 22:26:45 -0400
+Subject: [PATCH 19/24] fixed operator+ declaration
+
+---
+ test2.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test2.cpp b/test2.cpp
+index 8a3b936..1b1168c 100644
+--- a/test2.cpp
++++ b/test2.cpp
+@@ -1,5 +1,5 @@
+ #include "mystring.h"
+-MyString operator+(const MyString& lhs, const MyString& rhs) { return ((MyString&)rhs)+=lhs; }
++MyString operator+(const MyString& lhs, const MyString& rhs) { return ((MyString&)lhs)+=rhs; }
+ int main() {
+ 
+     MyString s1("hello ");
+-- 
+2.7.4
+
+
+From ac7d85971849a403f09365f31773ccd513c4ac27 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 25 Apr 2017 22:27:00 -0400
+Subject: [PATCH 20/24] fixed operator+ declaration
+
+---
+ test4.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test4.cpp b/test4.cpp
+index 097b923..614a416 100644
+--- a/test4.cpp
++++ b/test4.cpp
+@@ -1,7 +1,7 @@
+ // test4.cpp
+ 
+ #include "mystring.h"
+-MyString operator+(const MyString& lhs, const MyString& rhs) { return ((MyString&)lhs)+=rhs; }
++MyString operator+(const MyString& lhs, const MyString& rhs) { return ((MyString&)rhs)+=lhs; }
+ static MyString add(const MyString& a, const MyString& b)
+ {
+     MyString t(" and ");
+-- 
+2.7.4
+
+
+From a5491ebfef709b0ada50099ffc44a059f8f08c62 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 25 Apr 2017 22:27:22 -0400
+Subject: [PATCH 21/24] Added all required tests
+
+---
+ test5.cpp | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/test5.cpp b/test5.cpp
+index f419cae..0f43c36 100644
+--- a/test5.cpp
++++ b/test5.cpp
+@@ -1,12 +1,30 @@
+ #include "mystring.h"
+ #include <cassert>
+ 
++MyString operator+(const MyString& lhs, const MyString& rhs) { return ((MyString&)lhs)+=rhs; }
++
+ int main() {
+ 
+     MyString s1("that");
+     MyString s2("this");
+     MyString s3(s2);
+ 
++    MyString s("hello");
++    s += " world";
++    cout << s << endl;
++
++    MyString sp(" ");
++    MyString period(".");
++    MyString str;
++    
++    str += "This" + sp + "should" + sp 
++        += "work" + sp + "without" 
++        += sp + "any" + sp + "memory" 
++        += sp + "leak" 
++        += period;
++
++    cout << str << endl;
++
+     cout << "Asserting " << s1 << " < " << s2 << endl;
+     assert(s1 < s2);
+ 
+-- 
+2.7.4
+
+
+From 2771856e36cab5f59a58ba9d7f0b7d7f4b694468 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 25 Apr 2017 23:07:14 -0400
+Subject: [PATCH 22/24] Completed README.txt
+
+---
+ README.txt | 38 +++++++++-----------------------------
+ 1 file changed, 9 insertions(+), 29 deletions(-)
+
+diff --git a/README.txt b/README.txt
+index 783e235..80ee345 100644
+--- a/README.txt
++++ b/README.txt
+@@ -2,14 +2,10 @@ This file should contain:
+ 
+   - Michael Introini
+   - mbi2105
+-  - lab 7
++  - lab 9
+   - description:
+ 
+-  - Part 1: Added the files from Jae's example website to a folder
+-    on my home drive ~/html/cs3157/tng
+   - Part 2: Working as per the requirements.
+-    Included the "includes.h" file to resolve all required header
+-    files.
+ 
+ ############################ PART 1(A) ###############################
+  
+@@ -44,33 +40,17 @@ BASIC4TRACE:(0x7ffddcb79a50)->~MyString()               [25] 19,destructor,x
+ 
+ ############################ PART 1(B) ###############################
+ 
+-BASIC4TRACE: (0x7ffc5c6e5580)->MyString(const char *)    [1] 13,constructor,x
+-BASIC4TRACE: (0x7ffc5c6e5590)->MyString(const char *)    [2] 14,constructor,y
+-BASIC4TRACE: (0x7ffc5c6e5520)->MyString(const char *)    [3] 7,constructor,t
+-BASIC4TRACE: op+(const MyString&, const MyString&)       [4] Entering operator+
+-BASIC4TRACE: (0x7ffc5c6e54c0)->MyString()                [5] 8,default constructor,temp
+-BASIC4TRACE: (0x7ffc5c6e5530)->MyString(const MyString&) [6] 8,copy constructor,
+-                                                             u1 from return temp
+-BASIC4TRACE: (0x7ffc5c6e54c0)->~MyString()               [7] 8,destructor,temp
+-BASIC4TRACE: op+(const MyString&, const MyString&)       [8] Entering operator+
+-BASIC4TRACE: (0x7ffc5c6e54c0)->MyString()                [9] 8,default constructor,temp
+-BASIC4TRACE: (0x7ffc5c6e5540)->MyString(const MyString&) [10] 8,copy constructor,
+-                                                              u2
+-BASIC4TRACE: (0x7ffc5c6e54c0)->~MyString()               [11] 8,destructor,temp
+-BASIC4TRACE: (0x7ffc5c6e55b0)->MyString(const MyString&) [12] 16,copy constructor,
+-                                                              u3, return from add
+-BASIC4TRACE: (0x7ffc5c6e5540)->~MyString()               [13] 9,destructor,u2
+-BASIC4TRACE: (0x7ffc5c6e5530)->~MyString()               [14] 9,destructor,u1
+-BASIC4TRACE: (0x7ffc5c6e5520)->~MyString()               [15] 9,destructor,t
+-BASIC4TRACE: (0x7ffc5c6e55a0)->MyString(const MyString&) [16] 16,copy constructor,z
+-BASIC4TRACE: (0x7ffc5c6e55b0)->~MyString()               [17] 9,destructor,u3
+-one and two                                              [18] cout << z << endl;
+-BASIC4TRACE: (0x7ffc5c6e55a0)->~MyString()               [19] 19,destructor,z
+-BASIC4TRACE: (0x7ffc5c6e5590)->~MyString()               [20] 19,destructor,y
+-BASIC4TRACE: (0x7ffc5c6e5580)->~MyString()               [21] 19,destructor,x
++Passing references to a and b remove the need for the copy constructor
++to be called. This allows the program to reduce the amount of
++memory allocated during each function call.
++
+ 
+ ############################ PART 1(C) ###############################
+ 
++Removing the flag allows our program to omit calling the copy constructor
++when we need to use a temporary object to initiate a new MyString object.
++
++
+ BASIC4TRACE: (0x7ffe82ca1f30)->MyString(const char *)
+ BASIC4TRACE: (0x7ffe82ca1f40)->MyString(const char *)
+ BASIC4TRACE: (0x7ffe82ca1ee0)->MyString(const char *)
+-- 
+2.7.4
+
+
+From 90f6e42214db72c48788c60f2ff0ac0142795056 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 25 Apr 2017 23:08:50 -0400
+Subject: [PATCH 23/24] Reworking operator+= to account for extra words(not
+ complete)
+
+---
+ mystring.cpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/mystring.cpp b/mystring.cpp
+index c638b2a..4b8e4ce 100644
+--- a/mystring.cpp
++++ b/mystring.cpp
+@@ -162,7 +162,6 @@ MyString& MyString::operator+=(const MyString& rhs)
+     printf("[rhs.len]%d\n[rhs.data]->%s\n",rhs.len,rhs.data);
+ 
+     // Calculate new string length
+-    len += strlen(rhs.data);
+ 
+     // Set the length of the temp string
+     // Aallocate memory for data
+@@ -170,14 +169,15 @@ MyString& MyString::operator+=(const MyString& rhs)
+     temp.data = new char[len+1];
+ 
+     strcpy(temp.data,data);
+-    strcat(temp.data,rhs.data);
+ 
+     printf("[temp.len]%d\n[temp.data]->%s\n",temp.len,temp.data);
+ 
+     delete [] data;
++    len += strlen(rhs.data);
+     data = new char[len+1];
+-
++    
+     strcpy(data,temp.data);
++    strcat(data,rhs.data);
+ 
+     printf("[this.len]%d\n[this.data]->%s\n",len,data);
+     printf("[------------]\n\n");
+-- 
+2.7.4
+
+
+From 3fdd8764297561460f27d0178e9e258e44a3d0c9 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Wed, 26 Apr 2017 14:06:32 -0400
+Subject: [PATCH 24/24] Final commit, fully working version with no memory
+ leaks
+
+---
+ mystring.cpp | 60 ++++++++++++------------------------------------------------
+ mystring.h   |  4 ----
+ test2.cpp    | 10 +++++++++-
+ test4.cpp    |  8 +++++++-
+ test5.cpp    | 26 ++++++++++++++++++--------
+ 5 files changed, 46 insertions(+), 62 deletions(-)
+
+diff --git a/mystring.cpp b/mystring.cpp
+index 4b8e4ce..78a96a9 100644
+--- a/mystring.cpp
++++ b/mystring.cpp
+@@ -87,30 +87,6 @@ MyString& MyString::operator=(const MyString& rhs)
+     return *this;
+ }
+ 
+-// operator+
+-/*
+-MyString operator+(const MyString& s1, const MyString& s2)
+-{
+-#ifdef BASIC4TRACE
+-    fprintf(stderr, 
+-	    "BASIC4TRACE: op+(const MyString&, const MyString&)\n");
+-#endif
+-
+-    MyString temp;
+-
+-    delete[] temp.data;
+-
+-    temp.len = s1.len + s2.len;
+-
+-    temp.data = new char[temp.len+1];
+-    strcpy(temp.data,s1.data);
+-    strcat(temp.data,s2.data);
+-
+-    return temp;
+-}
+-*/
+-
+-
+ // operator<
+ int operator<(const MyString& s1, const MyString& s2)
+ {
+@@ -154,35 +130,23 @@ int operator>=(const MyString& s1, const MyString& s2)
+ MyString& MyString::operator+=(const MyString& rhs)
+ {
+     // Create a temp string for the new string
++
+     MyString temp;
+     delete [] temp.data;
+-
+-    printf("[------%s------]\n",rhs.data);
+-    printf("[len]%d\n[data]->%s\n",len,data);
+-    printf("[rhs.len]%d\n[rhs.data]->%s\n",rhs.len,rhs.data);
+-
+-    // Calculate new string length
+-
+-    // Set the length of the temp string
+-    // Aallocate memory for data
+-    temp.len = len;
+-    temp.data = new char[len+1];
+-
+-    strcpy(temp.data,data);
+-
+-    printf("[temp.len]%d\n[temp.data]->%s\n",temp.len,temp.data);
+-
+-    delete [] data;
+-    len += strlen(rhs.data);
+-    data = new char[len+1];
+     
+-    strcpy(data,temp.data);
+-    strcat(data,rhs.data);
++    // Calculate new length
++    temp.len = len + strlen(rhs.data);
++    temp.data = new char[temp.len+1];
++    // Copy over original lhs
++    strcpy(temp.data,data);
++    // concat the rhs data
++    strcat(temp.data,rhs.data);
++   
++    // Copy the new length and data to member 
++    len = len + strlen(rhs.data);  
++    *this = temp;
+ 
+-    printf("[this.len]%d\n[this.data]->%s\n",len,data);
+-    printf("[------------]\n\n");
+     return *this;
+-
+ }
+ // put-to operator
+ 
+diff --git a/mystring.h b/mystring.h
+index f86e54a..303b472 100644
+--- a/mystring.h
++++ b/mystring.h
+@@ -27,8 +27,6 @@ class MyString {
+ 	// returns the length of the string
+ 	int length() const { return len; }
+ 	
+-//        friend MyString operator+(const MyString& s1, const MyString& s2);
+-
+         // operator<
+ 	friend int operator<(const MyString& s1, const MyString& s2);
+ 	
+@@ -72,5 +70,3 @@ class MyString {
+ MyString operator+(const MyString& lhs, const MyString& rhs);
+ 
+ #endif
+-
+-
+diff --git a/test2.cpp b/test2.cpp
+index 1b1168c..a041d05 100644
+--- a/test2.cpp
++++ b/test2.cpp
+@@ -1,5 +1,13 @@
+ #include "mystring.h"
+-MyString operator+(const MyString& lhs, const MyString& rhs) { return ((MyString&)lhs)+=rhs; }
++
++MyString operator+(const MyString& lhs, const MyString& rhs) 
++{ 
++    MyString temp;
++    temp += lhs;
++    temp += rhs;
++    return temp; 
++}
++
+ int main() {
+ 
+     MyString s1("hello ");
+diff --git a/test4.cpp b/test4.cpp
+index 614a416..858aee2 100644
+--- a/test4.cpp
++++ b/test4.cpp
+@@ -1,7 +1,13 @@
+ // test4.cpp
+ 
+ #include "mystring.h"
+-MyString operator+(const MyString& lhs, const MyString& rhs) { return ((MyString&)rhs)+=lhs; }
++MyString operator+(const MyString& lhs, const MyString& rhs) 
++{ 
++    MyString temp;
++    temp += lhs;
++    temp += rhs;
++    return temp; 
++}
+ static MyString add(const MyString& a, const MyString& b)
+ {
+     MyString t(" and ");
+diff --git a/test5.cpp b/test5.cpp
+index 0f43c36..cca198e 100644
+--- a/test5.cpp
++++ b/test5.cpp
+@@ -1,30 +1,40 @@
+ #include "mystring.h"
+ #include <cassert>
+-
+-MyString operator+(const MyString& lhs, const MyString& rhs) { return ((MyString&)lhs)+=rhs; }
+-
++#include <cstdio>
++#include <cstring>
++
++MyString operator+(const MyString& lhs, const MyString& rhs) 
++{ 
++    MyString temp;
++    temp += lhs;
++    temp += rhs;
++    return temp; 
++}
+ int main() {
+ 
+     MyString s1("that");
+     MyString s2("this");
+     MyString s3(s2);
+ 
++    // Testing operator+=
+     MyString s("hello");
+     s += " world";
+     cout << s << endl;
+ 
++    // Testing operator+ after unfriending
+     MyString sp(" ");
+     MyString period(".");
+     MyString str;
+-    
+-    str += "This" + sp + "should" + sp 
+-        += "work" + sp + "without" 
+-        += sp + "any" + sp + "memory" 
++
++    str += "This" + sp + "should" + sp
++        += "work" + sp + "without"
++        += sp + "any" + sp + "memory"
+         += sp + "leak" 
+         += period;
+ 
+     cout << str << endl;
+-
++    
++    // Testing all other operators
+     cout << "Asserting " << s1 << " < " << s2 << endl;
+     assert(s1 < s2);
+ 
+-- 
+2.7.4
+

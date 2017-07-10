@@ -1,0 +1,430 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Short Sectioned Assignment
+% LaTeX Template
+% Version 1.0 (5/5/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Frits Wenneker (http://www.howtotex.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[paper=a4, fontsize=11pt]{scrartcl} % A4 paper and 11pt font size
+
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage{fourier} % Use the Adobe Utopia font for the document - comment this line to return to the LaTeX default
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage{amsmath,amsfonts,amsthm,amssymb} % Math packages
+\usepackage{caption}
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+\usepackage{float}
+\restylefloat{table}
+
+\usepackage{sectsty} % Allows customizing section commands
+\sectionfont{\centering \normalfont} % Make all sections centered, the default font and small caps
+\subsectionfont{\centering \normalfont} % Make all sections centered, the default font and small caps
+\subsubsectionfont{\raggedright \normalfont}
+
+\usepackage{fancyhdr} % Custom headers and footers
+\pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+\fancyhead{} % No page header - if you want one, create it in the same way as the footers below
+\fancyfoot[L]{} % Empty left footer
+\fancyfoot[C]{} % Empty center footer
+\fancyfoot[R]{\thepage} % Page numbering for right footer
+\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{13.6pt} % Customize the height of the header
+\newcommand*{\oldneg}{\mathord{\sim}}
+
+\setlength\parindent{0pt} % Removes all indentation from paragraphs - comment this line for an assignment with lots of text
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+
+\title{	
+\normalfont \normalsize 
+\textsc{Discrete Math} \\ [25pt] % Your university, school and/or department name(s)
+\horrule{0.5pt} \\[0.2cm] % Thin top horizontal rule
+\large Homework 1 \\ % The assignment title
+\horrule{2pt} \\[0.2cm] % Thick bottom horizontal rule
+}
+\author{Michael Introini} % Your name
+
+\date{\normalsize{May 29, 2017}} % Today's date or a custom date
+
+\begin{document}
+
+\maketitle % Print the title
+
+%----------------------------------------------------------------------------------------
+%	SECTION 1.1
+%----------------------------------------------------------------------------------------
+
+\section*{Chapter 1}
+
+\horrule{0.5pt} \\ % Thin top horizontal rule
+\subsection*{Section 1.1}
+\subsubsection*{Problem 12e}
+\textbf{Let p, q, and r be the propositions}\\
+\emph{p} : You have the flu.\\
+\emph{q} : You miss the final examination.\\
+\emph{r} : You pass the course.\\
+
+Express the proposition as an English sentence
+
+\textbf{e)} $(p \to \oldneg r) \lor (q \to \oldneg r)$\\
+
+If you have the flue or you miss the final examination, you will \emph{not} pass the course.
+
+
+\subsubsection*{Problem 14d,e}
+\textbf{Let p, q, and r be the propositions}\\
+\emph{p} : You get an A on the final exam.\\
+\emph{q} : You do every exercise in this book.\\
+\emph{r} : You get an A in this class.\\
+
+Write these propositions using p, q, and r and logical connectives (including negations).\\
+\textbf{d)} You get an A on the final, but you don't do every ex
+ercise in this book; nevertheless, you get an A in this class.\\
+
+$\oldneg q \land (p \land r)$\\
+
+\textbf{e)} Getting an A on the final and doing every exercise in\\
+this book is sufficient for getting an A in this class.\\
+
+$(p \land q) \to r$\\
+
+\subsubsection*{Problem 32d}
+Construct a truth table for each of these compound propositions.\\
+\textbf{d)} $(p \land q) \to (p \lor q)$\\
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{ll|cc|c}
+	$p$ & $q$ & \multicolumn{1}{l}{$(p \land q)$} & \multicolumn{1}{l|}{$(p \lor q)$} & \multicolumn{1}{l}{$(p \land q) \to (p \lor q)$} \\ \hline
+	F & F & F & F & T \\
+	F & T & F & T & T \\
+	T & F & F & T & T \\
+	T & T & T & T & T
+    \end{tabular}
+\end{table}
+
+%----------------------------------------------------------------------------------------
+%	SECTION 1.2
+%----------------------------------------------------------------------------------------
+
+\horrule{0.5pt} \\ % Thin top horizontal rule
+\subsection*{Section 1.2}
+\subsubsection*{Problem 36}
+
+Four friends have been identified as suspects for an unauthorized access into a computer 
+system. They have made statements to the investigating authorities. Alice said
+\textit{Carlos did it}. John said \textit{I did not do it.} Carlos said
+\textit{Diana did it.} Diana said \textit{Carlos lied when he said that
+I did it.}\\
+
+\textbf{a)} If the authorities also know that exactly one of the
+four suspects is telling the truth, who did it? Explain
+your reasoning.\\
+
+John was the one that did it.\\
+\textbf{Explination:}\\
+Both Diana and Carlos cannot lie at the same time, which means one of them is
+telling the truth. That implies that Alice is lying, and so is John. Since John is
+the only one referring to himself, he is the one who did it.\\
+
+\textbf{b)} If the authorities also know that exactly one is lying,
+who did it? Explain your reasoning.\\
+
+Carlos did it.\\
+\textbf{Explination:}\\
+Conversely, Carlos and Diana cannot tell the truth at the same time, and since only one
+suspect is lying, it means that Alice is telling the truth which implies that Carlos did it.\\
+
+%----------------------------------------------------------------------------------------
+%	SECTION 1.3
+%----------------------------------------------------------------------------------------
+
+\horrule{0.5pt} \\ % Thin top horizontal rule
+\subsection*{Section 1.3}
+\subsubsection*{Problem 8b}
+
+\textbf{8} Use De Morgan's laws to find the negation of each of the
+following statements.
+
+\textbf{b)} Yoshiko knows Java and calculus.\\
+
+Yoshiko does not know Java, or does not know Calculus, or does not know both.
+
+$\oldneg p \lor \oldneg q \lor \oldneg r$
+
+
+\subsubsection*{Problem 10}
+Show that each of these conditional statements is a tautology by using truth tables.
+
+\textbf{b)} $[(p \to q) \land (q \to r)] \to (p \to r)$\\
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ccc|cccc|c}
+    $p$ & $q$ & $r$ & $(p \to q)$ & $(q \to r)$ & $[(p \to q) \land (q \to r)]$ & $(p \to r)$ & $[(p \to q) \land (q \to r)] \to (p \to r)$ \\ \hline
+    F & F & F & T & T & T & T & T \\
+    F & F & T & T & T & T & T & T \\
+    F & T & F & T & F & F & T & T \\
+    F & T & T & T & T & T & T & T \\
+    T & F & F & F & T & F & T & T \\
+    T & F & T & F & T & F & T & T \\
+    T & T & F & T & F & F & F & T \\
+    T & T & T & T & T & T & T & T
+\end{tabular}
+\end{table}
+
+
+\subsubsection*{Problem 32}
+\textbf{32} Show that $(p \land q) \to r$ and $(p \to r) \land (q \to r)$ are not
+logically equivalent.\\
+
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lll}
+        $(p \land q) \to r$ &  & $(p \to r) \land (q \to r)$ \\
+        $\oldneg (p \land q) \lor r$ &  & $(\oldneg p \lor r) \land (\oldneg q \lor r)$ \\
+        $\oldneg p \lor \oldneg q \lor r$ & $\ne$ & $(\oldneg p \land \oldneg q) \lor r$
+    \end{tabular}
+\end{table}
+
+\subsubsection*{Problem 54}
+\textbf{54} Show that $p  |  (q  |  r)$ and $(p  |  q)  |  r$ are not equivalent,
+so that the logical operator $|$ is not associative.
+
+%--------------------------------------------------------------------------------------%
+%	SECTION 1.4
+%--------------------------------------------------------------------------------------%
+
+\horrule{0.5pt} \\ % Thin top horizontal rule
+\subsection*{Section 1.4}
+\subsubsection*{Problem 14}
+
+\textbf{14} Determine the truth value of each statement\\
+\textbf{a)} $\exists x(x^3 = -1)$\\
+\textbf{b)} $\exists x(x^4 < x^2)$\\
+\textbf{c)} $\forall x((-x^2) = x^2)$\\
+\textbf{d)} $\forall x(2x > x)$\\
+
+\textbf{a)} True\\
+\textbf{b)} True\\
+\textbf{c)} True\\
+\textbf{d)} False\\
+
+\subsubsection*{Problem 36}
+Find a counterexample, if possible, to these universally
+quantified statements, where the domain for all variables
+consists of all real numbers.\\
+
+\textbf{a)} $\forall x(x^2 \ne x)$\\
+\textbf{b)} $\forall x(x^2 \ne 2)$\\
+\textbf{c)} $\forall x(|x| > 0)$\\
+
+\textbf{a)} $\exists x(x^2 = x)$; Because when $x=0$, $0^2=0$.\\ 
+Therefor $x=0$ is a counterexample\\
+\textbf{a)} $\exists x(x^2 = 2)$; Because when $x = \sqrt{2}$, $(\sqrt{2})^2 = 2$.\\ 
+Therefore $x=\sqrt{2}$ is a counterexample\\
+\textbf{c)} $\exists x(|x| \le 0)$; Because when $x=0$, $|0| \le 0$ is True.\\
+Therefore $x=0$ is a counterexample.
+
+%--------------------------------------------------------------------------------------%
+%	SECTION 1.5
+%--------------------------------------------------------------------------------------%
+
+\horrule{0.5pt} \\ % Thin top horizontal rule
+\subsection*{Section 1.5}
+\subsubsection*{Problem 4}
+
+Let $P(x, y)$ be the statement “Student x has taken class
+y,” where the domain for $x$ consists of all students in your
+class and for $y$ consists of all computer science courses
+at your school. Express each of these quantifications in
+English.\\
+
+\textbf{b)} $\exists x \forall y P(x, y)$\\
+\textbf{c)} $\forall x \exists y P(x, y)$\\
+
+\textbf{b)} There is a student $x$ who has taken every Computer Science class in my school.\\
+\textbf{c)} For every student $x$ this exists at least one Computer Science class in my school.
+
+\subsubsection*{Problem 24}
+
+Translate each of these nested quantifications into an English 
+statement that expresses a mathematical fact. The
+domain in each case consists of all real numbers.\\
+
+\textbf{a)} $\exists x \forall y(x + y = y)$\\
+\textbf{b)} $\forall x \forall y((x \ne 0) \land (y \ne 0) \leftrightarrow (xy \ne 0))$\\
+
+\textbf{a)} There exists at least one real number $x$ such that the sum of its value and a real number $y$ equal $y$.\\
+\textbf{b)} For every pair $x,y$ their product is non-zero if and only if $x$ and $y$ are also non-zero.
+
+\subsubsection*{Problem 28}
+
+Determine the truth value of each of these statements if
+the domain of each variable consists of all real numbers.
+
+\textbf{a)} $\forall x \exists y(x^2 = y)$\\
+\textbf{b)} $\forall x \exists y(x = y^2)$\\
+
+\textbf{a)} True\\
+\textbf{b)} False
+
+\subsubsection*{Problem 30}
+Rewrite each of these statements so that negations appear 
+only within predicates (that is, so that no negation
+is outside a quantifier or an expression involving logical
+connectives).
+
+\textbf{b)} $\oldneg \forall x \exists y P(x, y)$\\
+\textbf{c)} $\oldneg \exists y(Q(y) \land \forall x \oldneg R(x, y))$
+
+
+\textbf{b)} $\exists x \forall y \oldneg P(x, y)$\\
+\textbf{c)} $\forall y(\oldneg Q(y) \lor \exists x R(x, y))$\\
+
+%--------------------------------------------------------------------------------------%
+%	SECTION 1.6
+%--------------------------------------------------------------------------------------%
+
+\horrule{0.5pt} \\ % Thin top horizontal rule
+\subsection*{Section 1.6}
+\subsubsection*{Problem 10}
+For each of these sets of premises, what relevant conclusion 
+or conclusions can be drawn? Explain the rules of inference 
+used to obtain each conclusion from the premises.\\
+
+\textbf{c)} 
+"All insects have six legs." "Dragonflies are insects."
+"Spiders do not have six legs." "Spiders eat dragonflies."\\
+
+All insects have six legs.\\
+Dragonflies are insects.\\
+Spiders do not have six legs.\\
+Spiders eat dragonflies.\\
+
+\textbf{Hypothetical Syllogism:} Dragonflies have six legs.\\
+\textbf{Modus Tollens:} Spiders are not insects.\\
+\textbf{Hypothetical Syllogism:} Spiders eat all insects.\\
+
+\textbf{Conclusion:} Spiders eat insects and dragonflies have six legs.
+
+\subsubsection*{Problem 12}
+Show that the argument form with premises 
+$(p \land t) \to (r \lor s)$, $q \to (u \land t)$, $u \to p$, and $\oldneg s$ and conclusion
+$q \to r$ is valid by first using Exercise 11 and then using rules of inference from Table 1.\\
+
+$r$ Modus Ponens
+
+%--------------------------------------------------------------------------------------%
+%	SECTION 1.7
+%--------------------------------------------------------------------------------------%
+
+\horrule{0.5pt} \\ % Thin top horizontal rule
+\subsection*{Section 1.7}
+\subsubsection*{Problem 8}
+\textbf{8)} Prove that if $n$ is a perfect square, then $n + 2$ is not a
+perfect square.
+
+\textbf{Contradiction}
+$p = n$ and $q = n+2$\\
+Assume $n = a^2$, and $n+2 = b^2$\\
+$2 = b^2 - n$\\
+$2 = b^2 - a^2$ (Replacing $n$ by $a^2$)\\
+$2 = (a+b)(a-b)$\\
+$2 = (a+b)$ and $1=(a-b)$, which added together is $2b = 3$\\
+$b = \frac{3}{2}$ which is not a perfect square.\\
+\\
+\textbf{c)} Prove or disprove that the product of a nonzero rational
+number and an irrational number is irrational.\\
+
+\textbf{Contradiction}\\
+Let $p = \frac{a}{b}$ where $a \not = 0$, and $b \not = 0$, and $k$ be an arbitrary irrational number.\\
+$\frac{a}{b} * k = \frac{ak}{b}$\\
+
+%--------------------------------------------------------------------------------------%
+%	SECTION 1.8
+%--------------------------------------------------------------------------------------%
+
+\horrule{0.5pt} \\ % Thin top horizontal rule
+\subsection*{Section 1.8}
+\subsubsection*{Problem 12}
+Show that the product of two of the numbers $65^{1000} - 8^{2001} + 3^{177}$ , 
+$79^{1212} - 9^{2399} + 2^{2001}$ , and $24^{4493} - 5^{8192} + 7^{1777}$ 
+is nonnegative. Is your proof constructive or nonconstructive? 
+[Hint: Do not try to evaluate these numbers!]\\
+
+Let $a, b,$ and $c$ represent the three summations above.
+Since either $a, b,$ or $c$ can be a negative, positive, or zero value number, we have
+a few cases to consider.\\
+If either of the two numbers is zero, then our product is zero; which is nonnegative.\\
+If we chose 2 negative numbers, our product is a positive number.\\
+For the case where we have a positive and negative number, we may end up with either a negative or
+positive number depending on our choice. Therefore, as long as we choose the right value, we can
+ensure that e always get a nonnegative value.\\
+
+Non-Constructive\\
+\subsubsection*{Problem 36}
+Prove that between every rational number and every irrational number there is an irrational number.\\
+
+Let $r = \frac{a}{b}$ where $b \not = 0$, also let $\sqrt{2}r$ be an arbitrary irrational number.\\
+Since know that $r < \sqrt{2}r$, we can infer that $r < \frac{1}{2}\sqrt{2}r < \sqrt{2}r$\\
+This proves that between every rational and irrational number, there is another irrational number.\\
+
+%--------------------------------------------------------------------------------------%
+%	SECTION 2.1
+%--------------------------------------------------------------------------------------%
+
+\horrule{0.5pt} \\ % Thin top horizontal rule
+\subsection*{Section 2.1}
+\subsubsection*{Problem 18}
+Find two sets $A$ and $B$ such that $A \in B$ and $A \subseteq B$
+
+Let $A = \{0,1,2,3\}$ and $B = \{0,1,2,3,4,5,6,7\}$\\
+\subsubsection*{Problem 20}
+What is the cardinality of each of these sets?\\
+\textbf{d)} $\{\emptyset , \{\emptyset \}, \{\emptyset \}, \{\emptyset \}\}\}$\\
+3
+%--------------------------------------------------------------------------------------%
+%	SECTION 2.2
+%--------------------------------------------------------------------------------------%
+
+\horrule{0.5pt} \\ % Thin top horizontal rule
+\subsection*{Section 2.2}
+\subsubsection*{Problem 18}
+Let A, B, and C be sets. Show that\\
+\textbf{d)} $(A - C) \cap (C - B) = \emptyset$\\ 
+$(A - C) \cap (C - B) = \emptyset$\\
+$(A \cap \overline{C}) \cap (C \cap \overline{B})$\\
+
+\subsubsection*{Problem 32}
+Find the symmetric difference of $\{1, 3, 5\}$ and $\{1, 2, 3\}$\\
+$\{2,5\}$\\
+
+\subsubsection*{Problem 48}
+Let $A_i = \{\dots,-2,-1,0,1,\ldots,i\}$. Find\\
+\textbf{a)} $\displaystyle \bigcup_{i=1}^{n}A_i$ 
+\textbf{b)} $\displaystyle \bigcap_{i=1}^{n}A_i$\\
+
+\textbf{a)} $\displaystyle \bigcup_{i=1}^{n}A_1 = \{\ldots,-2,-1,0,1,\ldots n\}$\\
+\textbf{b)} $\displaystyle \bigcap_{i=1}^{n}A_1 = \{\ldots,-2,-1,0,1\}$\\ 
+
+\end{document} 

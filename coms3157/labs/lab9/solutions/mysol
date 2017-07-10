@@ -1,0 +1,28 @@
+BASIC4TRACE:(0x7ffddcb79a50)->MyString(const char *)    [1] 13,constructor,x
+BASIC4TRACE:(0x7ffddcb79a60)->MyString(const char *)    [2] 14,constructor,y
+BASIC4TRACE:(0x7ffddcb79a90)->MyString(const MyString&) [3] 5,copy constructor,b
+BASIC4TRACE:(0x7ffddcb79a80)->MyString(const MyString&) [4] 5,copy constructor,a
+BASIC4TRACE:(0x7ffddcb799f0)->MyString(const char *)    [5] 7,constructor,t
+BASIC4TRACE:op+(const MyString&, const MyString&)       [6] Entering operator+
+BASIC4TRACE:(0x7ffddcb79990)->MyString()                [7] 8,default constructor,temp
+BASIC4TRACE:(0x7ffddcb79a00)->MyString(const MyString&) [8] 8,copy constructor, 
+                                                            u1 from return temp
+BASIC4TRACE:(0x7ffddcb79990)->~MyString()               [9] 8,destructor,temp
+BASIC4TRACE:op+(const MyString&, const MyString&)       [10] Entering operator+
+BASIC4TRACE:(0x7ffddcb79990)->MyString()                [11] 8,default constructor,temp 
+BASIC4TRACE:(0x7ffddcb79a10)->MyString(const MyString&) [12] 8,copy constructor,
+                                                             u2
+BASIC4TRACE:(0x7ffddcb79990)->~MyString()               [13] 8,destructor,temp
+BASIC4TRACE:(0x7ffddcb79aa0)->MyString(const MyString&) [14] 16,copy constructor,
+                                                             u3 return from add
+BASIC4TRACE:(0x7ffddcb79a10)->~MyString()               [15] 9,destructor,u2
+BASIC4TRACE:(0x7ffddcb79a00)->~MyString()               [16] 9,destructor,u1
+BASIC4TRACE:(0x7ffddcb799f0)->~MyString()               [17] 9,destructor,t
+BASIC4TRACE:(0x7ffddcb79a70)->MyString(const MyString&) [18] 16,copy constructor,z
+BASIC4TRACE:(0x7ffddcb79aa0)->~MyString()               [19] 9,destructor,u3
+BASIC4TRACE:(0x7ffddcb79a80)->~MyString()               [20] 9,destructor,a
+BASIC4TRACE:(0x7ffddcb79a90)->~MyString()               [21] 9,destructor,b
+one and two                                             [22] cout << z << endl;
+BASIC4TRACE:(0x7ffddcb79a70)->~MyString()               [23] 19,destructor,z
+BASIC4TRACE:(0x7ffddcb79a60)->~MyString()               [24] 19,destructor,y
+BASIC4TRACE:(0x7ffddcb79a50)->~MyString()               [25] 19,destructor,x

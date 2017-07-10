@@ -1,0 +1,146 @@
+// Building an efficient storage struction
+// A Collection
+
+HEIGHT OF A TREE BASED ON ITS ROOT, In other words the height of a subtree would be based on the root of that subtree.
+
+
+
+ RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION
+
+BinarySearchTree a.k.a BST (Collection of stuff) -- Needs to be Generic and Comparable to itself
+-- BinaryNode Class nested in BST class
+-- Nedes a Contains Method
+---(log(n) if it's a perfect tree)
+-- Add Method (go through and look for the value you're adding-- find it? cool. No? Keep going. Get to a Null link? Add the value.) 
+----log(n) if it's perfect.
+-- Remove
+-- PrintTree should return a sorted list of th values
+
+ RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION RECURSION
+
+
+-- TO FIND MIN KEEP GOING LEFT UNTIL YOU FIND A NULL LINK
+-- TO FIND MAX KEEP GOING RIGHT UNTIL YOU FIND A NULL LINK
+
+-- objects that implement comparable because you need to be able to state if two objects are equal or otherwise.
+-- Rule
+---Every single node in the left hand subtree must be smaller than the root node
+---Every single node in the right hand subtree must be larger than the root node
+
+Check the root
+-- Smaller? Check the left
+-- Larger? Check the right
+
+5,4,3,2,1 
+If you add this in order it turns into a LinkedList (order N)
+
+EXAM TIP: BIG O COST (NO COMMENT ABOUT BALANCED OF NOT? ASSUME WORST CASE!! SO THAT WOULD BE ORDER N)
+
+Tree Doesn't exist. Create the node and make it the root
+5 -- root
+4 -- Left
+3 -- Left
+2 -- Left
+1 -- Left
+
+
+Need to be able to compare elements to be able to order elements properly.
+
+- public method invokes the private method. 
+-- the private method is the recursive method
+
+Root changes on insert if the root was originally NULL.
+
+Track duplicates with a count variable to make sure the node hasn't been insterted already.
+isEmpty: Check if root is null
+findMin: go left until you reach the last node - Tail Recursion
+findMax: advance right until you find the last node.
+treeHeight: find the max between height of left and height of right, this returns the larger number, which is the height of the tree.
+
+remove: Find max on the right hand side hanging from the node being deleted, get that node and substitute it in the place of the element being deleted.
+
+Tail Recursion: Make a recursive call as the last line of your method; iterating across the data set. Can be replaced with a while loop.
+
+Side Note: 
+Underflow --> Remove something from an empty data structure
+Underflow --> Search for something in an empty data structure
+
+Scenario 1: Node has two children
+-- t.element == x and t.left != null && t.right != null
+--- set t.element = findMin ( t.right ).element;
+--- set t.right = remove( t.element, t.right );
+
+*** Scenario 2: One Child (left or right) or no children ***
+-- t = (t.left != null) ? t.left : t.right;
+
+Lazy deletion:
+-- Add a field to the tree node class of valid. This means every other method in the class needs to account for this field. findMin and findMax become difficult to handle.
+
+
+****AVL Trees (height bound at O(logN)) - MUST ALSO BE A VALID BINARY SEARCH TREE*****
+left to right increasing
+height of the left subtree cannot differ from the height of the right subtree by +1. Has to hold true at EVERY LEVEL.
+NULL Links have heights of -1
+
+FOUR CASES FOR INSERTS THAT CAUSE IMBALANCES
+2 SETS OF 2 INSERTS
+1 FIX FOR EACH SET
+
+In terms of height:
+Tree 1 is a valid AVL
+NODE = root = 0
+
+Tree 2 is a valid AVL
+        R
+    Node
+Node    NULL
+
+Tree 3 is invalid
+                               R
+                     Node.             Node
+ BREAKS HERE --->Node    NULL      NULL     Node
+             Node    NULL               NULL    NULL
+         NULL    NULL
+//-------------------------------------------------------------------------//
+Case 1: Single Rotation to fix
+Rotation occurs between the child rotated and its parent
+
+	4
+  2
+1
+//-------------------------------------------------------------------------//
+Case 2: Double Rotation to fix
+First rotation occurs between the node that has the imbalance and its child
+Second rotation occurs between the child rotated and its parent
+
+  4
+2
+  1
+//-------------------------------------------------------------------------//
+Case 3: Double Rotation to fix
+
+2
+  4
+3
+//-------------------------------------------------------------------------//
+Case 4: Single Rotation to fix
+
+2
+  4
+    3 
+//-------------------------------------------------------------------------//
+
+
+
+
+
+Assume the binary seacrh condition stays true (for the in class example):
+-All little triangles have same height H
+-All big triangle have a height of H+1
+A=little triangle
+B=little triangle
+C=little triangle
+
+	   k1
+  k2		C
+A   B    

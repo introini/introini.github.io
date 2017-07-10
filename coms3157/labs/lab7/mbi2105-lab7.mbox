@@ -1,0 +1,3204 @@
+From 774adcf08225f0ec569d7193fa58227bba384a9e Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Sat, 8 Apr 2017 19:34:15 -0400
+Subject: [PATCH 01/23] Adding DieWithError.c file
+
+---
+ part2/DieWithError.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+ create mode 100644 part2/DieWithError.c
+
+diff --git a/part2/DieWithError.c b/part2/DieWithError.c
+new file mode 100644
+index 0000000..c56afec
+--- /dev/null
++++ b/part2/DieWithError.c
+@@ -0,0 +1,8 @@
++#include <stdio.h>  /* for perror() */
++#include <stdlib.h> /* for exit() */
++
++void DieWithError(char *errorMessage)
++{
++    fprintf(stderr, "%s", errorMessage);
++    exit(1);
++}
+-- 
+2.7.4
+
+
+From 0ca5e78314a4d5f43cf1ff815acdd60c51eb555e Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Sat, 8 Apr 2017 19:38:10 -0400
+Subject: [PATCH 02/23] modified mdb-lookup-server.c to include client ip in
+ the HandelHTTPRequest() call.
+
+---
+ part2/http-server.c | 71 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 71 insertions(+)
+ create mode 100644 part2/http-server.c
+
+diff --git a/part2/http-server.c b/part2/http-server.c
+new file mode 100644
+index 0000000..d835b6e
+--- /dev/null
++++ b/part2/http-server.c
+@@ -0,0 +1,71 @@
++#include "includes.h"
++#include <sys/stat.h>
++
++#define MAXPENDING 5    /* Maximum outstanding connection requests */
++
++void DieWithError(char *errorMessage);  /* Error handling function */
++void HandleHTTPRequest(char *clntIP, int clntSocket);   /* TCP client handling function */
++
++int main(int argc, char *argv[])
++{
++    int servSock;                    /* Socket descriptor for server */
++    int clntSock;                    /* Socket descriptor for client */
++    struct sockaddr_in HTTPServAddr;  /* Local address */
++    struct sockaddr_in HTTPClntAddr;  /* Client address */
++    struct stat webrootMode;
++    unsigned short HTTPServPort;      /* Server port */
++    char *webroot;
++    unsigned int clntLen;            /* Length of client address data structure */
++
++    // ignore SIGPIPE so that we don't terminate when we call
++    // send() on a disconnected socket.
++    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) 
++        DieWithError("signal() failed");
++
++    if (argc != 5)     /* Test for correct number of arguments */
++    {
++        fprintf(stderr, "Usage:  %s <server_port> <web_root> <mdb-lookup-host> <mdb-lookup-port>\n", argv[0]);
++        exit(1);
++    }
++
++    
++    stat(argv[2],&webrootMode);
++    if (!S_ISDIR(webrootMode.st_mode)) {
++        fprintf(stderr, "<web_root> must be a directory.\n");
++        exit(1);
++    }
++    HTTPServPort = atoi(argv[1]);  /* First arg:  local port */
++    /* Create socket for incoming connections */
++    if ((servSock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
++        DieWithError("socket() failed");
++      
++    /* Construct local address structure */
++    memset(&HTTPServAddr, 0, sizeof(HTTPServAddr));   /* Zero out structure */
++    HTTPServAddr.sin_family = AF_INET;                /* Internet address family */
++    HTTPServAddr.sin_addr.s_addr = htonl(INADDR_ANY); /* Any incoming interface */
++    HTTPServAddr.sin_port = htons(HTTPServPort);      /* Local port */
++
++    /* Bind to the local address */
++    if (bind(servSock, (struct sockaddr *) &HTTPServAddr, sizeof(HTTPServAddr)) < 0)
++        DieWithError("bind() failed");
++
++    /* Mark the socket so it will listen for incoming connections */
++    if (listen(servSock, MAXPENDING) < 0)
++        DieWithError("listen() failed");
++    
++    for (;;) /* Run forever */
++    {
++        /* Set the size of the in-out parameter */
++        clntLen = sizeof(HTTPClntAddr);
++
++        /* Wait for a client to connect */
++        if ((clntSock = accept(servSock, (struct sockaddr *) &HTTPClntAddr, 
++                               &clntLen)) < 0)
++            DieWithError("accept() failed");
++
++        /* clntSock is connected to a client! */
++        char *clientIP = inet_ntoa(HTTPClntAddr.sin_addr);
++        HandleHTTPRequest(clientIP,clntSock);
++    }
++    /* NOT REACHED */
++}
+-- 
+2.7.4
+
+
+From a2bdd33fa5f4496f92c5cc037c162dbab1132cfb Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Sat, 8 Apr 2017 19:39:31 -0400
+Subject: [PATCH 03/23] modified HandleTCPRequest.c to take client IP instead
+ of database. Also handles calls to methods other than GET properly
+
+---
+ part2/HandleHTTPRequest.c | 61 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 61 insertions(+)
+ create mode 100644 part2/HandleHTTPRequest.c
+
+diff --git a/part2/HandleHTTPRequest.c b/part2/HandleHTTPRequest.c
+new file mode 100644
+index 0000000..4130e0e
+--- /dev/null
++++ b/part2/HandleHTTPRequest.c
+@@ -0,0 +1,61 @@
++#include <stdio.h>      /* for printf() and fprintf() */
++#include <sys/socket.h> /* for recv() and send() */
++#include <unistd.h>     /* for close() */
++#include <string.h>
++
++#define RESPBUFSIZE 4096   /* Size of receive buffer */
++
++void DieWithError(char *errorMessage);  /* Error handling function */
++
++char *validateMethod(int clntSocket, char *m) {
++    
++    char resp_buf[RESPBUFSIZE];
++    int len = 0;
++    int res = 0;
++    
++    if (strcmp("GET",m) != 0) { 
++  
++       len = sprintf(resp_buf, "%s","501 Not Implemented\r\n");
++       if ((res = send(clntSocket, resp_buf, len, 0)) != len)
++           DieWithError("sen() failed");
++        
++       len = sprintf(resp_buf,"%s","\r\n");
++       if ((res = send(clntSocket, resp_buf, len, 0)) != len)
++           DieWithError("sen() failed");
++       
++       len = sprintf(resp_buf, "%s","<html>\n<body>\n<h1>\n501 Not Implemented\n</h1>\n</body>\n</html>\r\n");
++       if ((res = send(clntSocket, resp_buf, len, 0)) != len)
++           DieWithError("sen() failed");
++
++       close(clntSocket);
++       return "501 Not Implemented";
++    }
++
++    return "200 OK";
++
++}
++
++void HandleHTTPRequest(char *clientIP, int clntSocket)
++{
++     int recvMsgSize;    /* Size of received message */
++    char requestLine[RESPBUFSIZE];        /* Buffer for echo string */
++    char *token_separators = "\t \r\n"; // tab, space, new line
++
++
++
++    /* Receive message from client */
++    if ((recvMsgSize = recv(clntSocket, requestLine, RESPBUFSIZE, 0)) < 0)
++        DieWithError("recv() failed");
++
++    
++    char *method = strtok(requestLine, token_separators);
++    char *requestURI = strtok(NULL, token_separators);
++    char *httpVersion = strtok(NULL, token_separators);
++    char *status = validateMethod(clntSocket, method);
++    
++
++    fprintf(stdout, "%s \"%s %s %s\" %s", clientIP, method, requestURI, httpVersion, status);
++
++
++    close(clntSocket);    /* Close client socket */
++}
+-- 
+2.7.4
+
+
+From 5e16b25c4a3c225083bf7ace9012adb657f1e93f Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Tue, 11 Apr 2017 16:06:26 -0400
+Subject: [PATCH 04/23] Enabled multiple checks to the initial Request; Method,
+ URI, and Proto checks
+
+---
+ part2/HandleHTTPRequest.c | 197 +++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 161 insertions(+), 36 deletions(-)
+
+diff --git a/part2/HandleHTTPRequest.c b/part2/HandleHTTPRequest.c
+index 4130e0e..8394119 100644
+--- a/part2/HandleHTTPRequest.c
++++ b/part2/HandleHTTPRequest.c
+@@ -2,60 +2,185 @@
+ #include <sys/socket.h> /* for recv() and send() */
+ #include <unistd.h>     /* for close() */
+ #include <string.h>
++#include <sys/stat.h>
++#include <sys/types.h>
+ 
+-#define RESPBUFSIZE 4096   /* Size of receive buffer */
++#define BUF 4096   /* Size of receive buffer */
++#define RESP501 "HTTP/1.0 Not Implemented\r\n"
++#define HTML501 "<html>\n<body>\n<h1>\n501 Not Implemented\n</h1>\n</body>\n</html>\r\n"
++#define RESP400 "HTTP/1.0 Bad Request\r\n"
++#define HTML400 "<html>\n<body>\n<h1>\n400 Bad Request\n</h1>\n</body>\n</html>\r\n"
++#define RESP404 "HTTP/1.0 Not Found\r\n"
++#define HTML404 "<html>\n<body>\n<h1>\n404 Not Found\n</h1>\n</body>\n</html>\r\n"
+ 
+ void DieWithError(char *errorMessage);  /* Error handling function */
+ 
+-char *validateMethod(int clntSocket, char *m) {
+-    
+-    char resp_buf[RESPBUFSIZE];
+-    int len = 0;
+-    int res = 0;
+-    
+-    if (strcmp("GET",m) != 0) { 
+-  
+-       len = sprintf(resp_buf, "%s","501 Not Implemented\r\n");
+-       if ((res = send(clntSocket, resp_buf, len, 0)) != len)
+-           DieWithError("sen() failed");
++void sendErr(char *resp,char *err,char *errHTML,int sock) {
++        // Send Header to Client
++        snprintf(resp,strlen(err)+3,"%s""\r\n",err);
++        if (send(sock,resp,strlen(err)+3,0) != strlen(err)+3)
++            DieWithError("Failed to send Server Header Response 501");
++
++        // Send HTML to Browser
++        snprintf(resp,strlen(errHTML)+3,"%s",errHTML);
++        if (send(sock,resp,strlen(errHTML)+3,0) != strlen(errHTML)+3)
++            DieWithError("Failed to send HTML 501");
+         
+-       len = sprintf(resp_buf,"%s","\r\n");
+-       if ((res = send(clntSocket, resp_buf, len, 0)) != len)
+-           DieWithError("sen() failed");
+-       
+-       len = sprintf(resp_buf, "%s","<html>\n<body>\n<h1>\n501 Not Implemented\n</h1>\n</body>\n</html>\r\n");
+-       if ((res = send(clntSocket, resp_buf, len, 0)) != len)
+-           DieWithError("sen() failed");
++        // Close Connection
++        close(sock);
++}
++
++void HandleHTTPRequest(char *wr, char *clntIP, int clntSocket)
++{
++    char clntRequest[BUF];      /* Buffer for echo string */ 
++    char *token_separators = "\t \r\n";  
++    char srvResponse[BUF];
++    char *resp501 = RESP501;
++    char *html501 = HTML501;
++    char *resp400 = RESP400;
++    char *html400 = HTML400;
++    struct stat sb;
+ 
+-       close(clntSocket);
+-       return "501 Not Implemented";
++    /*
++    char *err501_status = "501 Not Implemented\r\n";
++    char *err400_status = "400 Bad Request\r\n";
++    char *ok_status = "HTTP/1.0 200 OK\r\n";
++    char *pathArr[32];
++    struct stat uri;
++*/
++    FILE *fd = fdopen(clntSocket, "r");
++    if (fd == NULL)
++        DieWithError("fdopen failed");
++
++    // read the 1st line
++    if (fgets(clntRequest, sizeof(clntRequest), fd) == NULL) {
++	if (ferror(fd))
++	    DieWithError("IO error");
++    } 
++    // tokenize the first line before processing it 
++    char *method = strtok(clntRequest, token_separators);
++    char *requestURI = strtok(NULL, token_separators);
++    char *proto = strtok(NULL, token_separators);
++   
++      
++
++    /* Check for propper request method
++    *
++    */
++    if (strncmp("GET", method, 3) != 0) {
++       // Log to Server
++       fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
++       sendErr(srvResponse,resp501,html501,clntSocket);
++   
+     }
++    
++     /* Check for propper request protocol
++    *
++    */
++    if (strncmp("HTTP/1.0",proto,9) != 0 && strncmp("HTTP/1.1",proto,9) != 0) {
++       // Log to Server
++       fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
++       sendErr(srvResponse,resp501,html501,clntSocket);
++   }
++   
++   /* We need to construct the filepath from the requestURI 
++    * First check if the URI begins with a "/"
++    */
++     
++    
++    if (strrchr(requestURI, '/') == NULL) {
++       fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"400 Bad Request");
++       sendErr(srvResponse,resp400,html400,clntSocket); 
++    } 
+ 
+-    return "200 OK";
++     stat(wr, &sb);
++     if (S_ISDIR(sb.st_mode) && wr[strlen(wr)-1] != '/') {
++        strcat(wr, "/index.html");
++     } 
+ 
+-}
++    
+ 
+-void HandleHTTPRequest(char *clientIP, int clntSocket)
+-{
+-     int recvMsgSize;    /* Size of received message */
+-    char requestLine[RESPBUFSIZE];        /* Buffer for echo string */
+-    char *token_separators = "\t \r\n"; // tab, space, new line
+ 
++    /* Read the rest of the header response up to and including the 
++    * blank line.
++    */
++/*
++    while (fgets(clntRequest, sizeof(clntRequest), fd) == NULL) {
++       if (ferror(fd))
++           DieWithError("IO error");
++       if (strncmp(clntRequest,"\r\n",3) == 0) {
++           break;
++       }
++   }  
++   
++*/
++   
++
++/*
++   // Now it's time to read the file.
++   FILE *local = fopen(requestURI, "rb");
+ 
++   size_t n;
++   while ((n = fread(srvResponse, 1, sizeof(srvResponse), local)) > 0) {
++       if (fwrite(srvResponse, 1, n, fd) != n) 
++       DieWithError("fwrite failed");
++   }
++   // fread() returns 0 on EOF or on error
++   // so we need to check if there was an error.
++   if (ferror(local))
++       DieWithError("read err");
++   // All done.  Clean up.
++   
++   fclose(local);
++*/
+ 
+-    /* Receive message from client */
+-    if ((recvMsgSize = recv(clntSocket, requestLine, RESPBUFSIZE, 0)) < 0)
+-        DieWithError("recv() failed");
+ 
++/*    
++    pathArr[0] = strtok(requestURI, "/");
++        char **cap = pathArr+1;
++        while((*cap++ = strtok(NULL,"/")))
++       
++            ;    
++   */
+     
+-    char *method = strtok(requestLine, token_separators);
+-    char *requestURI = strtok(NULL, token_separators);
+-    char *httpVersion = strtok(NULL, token_separators);
+-    char *status = validateMethod(clntSocket, method);
++   /*
++    stat(strcat(wr,requestURI), &uri);
+     
++    //fprintf(stderr, "[DEBUG] [%s]\n", wr);
++    //fprintf(stderr, "[DEBUG] [%s]\n", uri.st_mode);
++    
++    if (S_ISREG(uri.st_mode)) {
++        
++        snprintf(srvResponse, strlen(ok_status),"%s",ok_status);
++        if ((send(clntSocket, srvResponse, strlen(srvResponse), 0)) != strlen(srvResponse))
++            DieWithError("send() 501 Err - Failed");
++        
++         Send blank line 
++        if ((send(clntSocket, bl, 3, 0)) != 3)
++            DieWithError("send() 501 Err - Failed");
++        
++        FILE *fp = fopen(wr, "rb");
++        
++        if (fp == NULL)
++         fprintf(stderr, "Can't open %s\n", wr);
+ 
+-    fprintf(stdout, "%s \"%s %s %s\" %s", clientIP, method, requestURI, httpVersion, status);
++        size_t n = 0;
++        while ((n = fread(srvResponse,1,BUF, fp)) > 0) {
++            if(send(clntSocket, srvResponse, strlen(srvResponse), 0) != strlen(srvResponse))
++                DieWithError("send html failed");
++        }
++        if(ferror(fp))
++            DieWithError("fread failed");
++    
++        fprintf(stdout, "%s \"%s %s %s\" %s", 
++                clientIP, method, requestURI, 
++                proto, ok_status);
++    
++        fclose(fp);
++    }
++*/
+ 
+ 
+     close(clntSocket);    /* Close client socket */
++
+ }
+-- 
+2.7.4
+
+
+From de2689a5df9fe0302b446d825fbaddce9166e902 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Tue, 11 Apr 2017 16:07:00 -0400
+Subject: [PATCH 05/23] Added web root parameter to HandleHTTPRequest() call
+
+---
+ part2/http-server.c | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
+
+diff --git a/part2/http-server.c b/part2/http-server.c
+index d835b6e..03d2568 100644
+--- a/part2/http-server.c
++++ b/part2/http-server.c
+@@ -4,7 +4,7 @@
+ #define MAXPENDING 5    /* Maximum outstanding connection requests */
+ 
+ void DieWithError(char *errorMessage);  /* Error handling function */
+-void HandleHTTPRequest(char *clntIP, int clntSocket);   /* TCP client handling function */
++void HandleHTTPRequest(char *wr, char *clntIP, int clntSocket);   /* TCP client handling function */
+ 
+ int main(int argc, char *argv[])
+ {
+@@ -12,7 +12,6 @@ int main(int argc, char *argv[])
+     int clntSock;                    /* Socket descriptor for client */
+     struct sockaddr_in HTTPServAddr;  /* Local address */
+     struct sockaddr_in HTTPClntAddr;  /* Client address */
+-    struct stat webrootMode;
+     unsigned short HTTPServPort;      /* Server port */
+     char *webroot;
+     unsigned int clntLen;            /* Length of client address data structure */
+@@ -28,12 +27,9 @@ int main(int argc, char *argv[])
+         exit(1);
+     }
+ 
+-    
+-    stat(argv[2],&webrootMode);
+-    if (!S_ISDIR(webrootMode.st_mode)) {
+-        fprintf(stderr, "<web_root> must be a directory.\n");
+-        exit(1);
+-    }
++    /* Where the files will be served from */ 
++    webroot = argv[2];
++
+     HTTPServPort = atoi(argv[1]);  /* First arg:  local port */
+     /* Create socket for incoming connections */
+     if ((servSock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+@@ -65,7 +61,8 @@ int main(int argc, char *argv[])
+ 
+         /* clntSock is connected to a client! */
+         char *clientIP = inet_ntoa(HTTPClntAddr.sin_addr);
+-        HandleHTTPRequest(clientIP,clntSock);
++        HandleHTTPRequest(webroot,clientIP,clntSock);
++
+     }
+     /* NOT REACHED */
+ }
+-- 
+2.7.4
+
+
+From 623fffa0a06734be69f718b13a3e6f21c71b6778 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Wed, 12 Apr 2017 11:29:29 -0400
+Subject: [PATCH 06/23] restructred the directory for lab 7
+
+---
+ DieWithError.c      |   8 +++
+ HandleHTTPRequest.c | 184 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ Makefile            |  51 +++++++++++++++
+ http-server.c       |  68 +++++++++++++++++++
+ includes.h          |  18 +++++
+ 5 files changed, 329 insertions(+)
+ create mode 100644 DieWithError.c
+ create mode 100644 HandleHTTPRequest.c
+ create mode 100644 Makefile
+ create mode 100644 http-server.c
+ create mode 100644 includes.h
+
+diff --git a/DieWithError.c b/DieWithError.c
+new file mode 100644
+index 0000000..c56afec
+--- /dev/null
++++ b/DieWithError.c
+@@ -0,0 +1,8 @@
++#include <stdio.h>  /* for perror() */
++#include <stdlib.h> /* for exit() */
++
++void DieWithError(char *errorMessage)
++{
++    fprintf(stderr, "%s", errorMessage);
++    exit(1);
++}
+diff --git a/HandleHTTPRequest.c b/HandleHTTPRequest.c
+new file mode 100644
+index 0000000..e7e4979
+--- /dev/null
++++ b/HandleHTTPRequest.c
+@@ -0,0 +1,184 @@
++#include <stdio.h>      /* for printf() and fprintf() */
++#include <sys/socket.h> /* for recv() and send() */
++#include <unistd.h>     /* for close() */
++#include <string.h>
++#include <sys/stat.h>
++#include <sys/types.h>
++
++#define BUF 4096   /* Size of receive buffer */
++#define RESP501 "HTTP/1.0 Not Implemented\r\n"
++#define HTML501 "<html>\n<body>\n<h1>\n501 Not Implemented\n</h1>\n</body>\n</html>\r\n"
++#define RESP400 "HTTP/1.0 Bad Request\r\n"
++#define HTML400 "<html>\n<body>\n<h1>\n400 Bad Request\n</h1>\n</body>\n</html>\r\n"
++#define RESP404 "HTTP/1.0 Not Found\r\n"
++#define HTML404 "<html>\n<body>\n<h1>\n404 Not Found\n</h1>\n</body>\n</html>\r\n"
++#define RESP200 "HTTP/1.0 200 OK\r\n"
++
++void DieWithError(char *errorMessage);  /* Error handling function */
++
++void sendErr(char *resp,char *err,char *errHTML,int sock) {
++        // Send Header to Client
++        snprintf(resp,strlen(err)+3,"%s""\r\n",err);
++        if (send(sock,resp,strlen(err)+3,0) != strlen(err)+3)
++            DieWithError("Failed to send Server Header Response 501");
++
++        // Send HTML to Browser
++        snprintf(resp,strlen(errHTML)+3,"%s",errHTML);
++        if (send(sock,resp,strlen(errHTML)+3,0) != strlen(errHTML)+3)
++            DieWithError("Failed to send HTML 501");
++        
++        // Close Connection
++        close(sock);
++}
++
++void serveFile(char *buf, char *filePath, int clntSocket) {
++    /* Log and Send 200 OK Response */
++    int len; 
++    struct stat sb;
++    size_t n;
++
++    len = sprintf(buf, RESP200);
++    if (send(clntSocket,buf,len,0) != len)
++        DieWithError("Failed to Send Reponse Header");
++    
++    len = sprintf(buf, "\r\n");
++    if (send(clntSocket,buf,len,0) != len)
++        DieWithError("Failed to Send Reponse Header");
++
++
++   // Now it's time to read the file.
++   FILE *local = fopen(filePath, "rb");
++   stat(filePath, &sb);
++   while ((n = fread(buf,1,BUF,local)) > 0) {
++       if ((n = send(clntSocket,buf,strlen(buf),0)) != sb.st_size ) 
++            DieWithError("fwrite failed");
++   }
++   // fread() returns 0 on EOF or on error
++   // so we need to check if there was an error.
++   if (ferror(local))
++       DieWithError("read err");
++   // All done.  Clean up.
++   
++   fclose(local);
++}
++
++void HandleHTTPRequest(char *wr, char *clntIP, int clntSocket)
++{
++    int  len;
++    char buf[BUF];    
++    char srvResponse[BUF];
++    char *token_separators = "\t \r\n";  
++    char *reqLine;
++    char *resp501 = RESP501;
++    char *html501 = HTML501;
++    char *resp400 = RESP400;
++    char *html400 = HTML400;
++    struct stat sb;
++
++    FILE *fd = fdopen(clntSocket, "r+b");
++    if (fd == NULL)
++        DieWithError("fdopen failed");
++
++    // read the 1st line
++    if (fgets(reqLine, sizeof(reqLine), fd) == NULL) {
++	if (ferror(fd))
++	    DieWithError("IO error");
++    } 
++    // tokenize the first line before processing it 
++    char *method = strtok(reqLine, token_separators);
++    char *requestURI = strtok(NULL, token_separators);
++    char *proto = strtok(NULL, token_separators);
++
++    /* Check for propper request method
++    *
++    */
++    if (strncmp("GET", method, 3) != 0) {
++       // Log to Server
++       fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
++       sendErr(srvResponse,resp501,html501,clntSocket);
++   
++    }
++    
++    /* Check for propper request protocol
++    *
++    */
++    if (strncmp("HTTP/1.0",proto,9) != 0 && strncmp("HTTP/1.1",proto,9) != 0) {
++       // Log to Server
++       fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
++       sendErr(srvResponse,resp501,html501,clntSocket);
++   }
++   
++   /* We need to construct the filepath from the requestURI 
++    * First check if the URI begins with a "/"
++    */ 
++    if (strrchr(requestURI, '/') == NULL) {
++       fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"400 Bad Request");
++       sendErr(srvResponse,resp400,html400,clntSocket); 
++    } 
++   
++    
++    /* Read the rest of the header response up to and including the 
++    * blank line.
++    */
++    while (fgets(buf, sizeof(buf), fd) == NULL) {
++       if (ferror(fd))
++           DieWithError("IO error");
++       if (strncmp(buf,"\r\n",3) == 0) {
++           break;
++       }
++    }
++
++  fprintf(stderr, "%s\n",buf);
++  fprintf(stderr, "%s\n",reqLine);
++  fprintf(stderr, "%s\n%s\n%s\n",method, requestURI, proto);
++
++
++    /*    
++          pathArr[0] = strtok(requestURI, "/");
++          char **cap = pathArr+1;
++          while((*cap++ = strtok(NULL,"/")))
++
++          ;    
++          */
++    
++   /*
++    stat(strcat(wr,requestURI), &uri);
++    
++    //fprintf(stderr, "[DEBUG] [%s]\n", wr);
++    //fprintf(stderr, "[DEBUG] [%s]\n", uri.st_mode);
++    
++    if (S_ISREG(uri.st_mode)) {
++        
++        snprintf(srvResponse, strlen(ok_status),"%s",ok_status);
++        if ((send(clntSocket, srvResponse, strlen(srvResponse), 0)) != strlen(srvResponse))
++            DieWithError("send() 501 Err - Failed");
++        
++         Send blank line 
++        if ((send(clntSocket, bl, 3, 0)) != 3)
++            DieWithError("send() 501 Err - Failed");
++        
++        FILE *fp = fopen(wr, "rb");
++        
++        if (fp == NULL)
++         fprintf(stderr, "Can't open %s\n", wr);
++
++        size_t n = 0;
++        while ((n = fread(srvResponse,1,BUF, fp)) > 0) {
++            if(send(clntSocket, srvResponse, strlen(srvResponse), 0) != strlen(srvResponse))
++                DieWithError("send html failed");
++        }
++        if(ferror(fp))
++            DieWithError("fread failed");
++    
++        fprintf(stdout, "%s \"%s %s %s\" %s", 
++                clientIP, method, requestURI, 
++                proto, ok_status);
++    
++        fclose(fp);
++    }
++*/
++
++
++    close(clntSocket);    /* Close client socket */
++
++}
+diff --git a/Makefile b/Makefile
+new file mode 100644
+index 0000000..f0283b3
+--- /dev/null
++++ b/Makefile
+@@ -0,0 +1,51 @@
++
++#
++# Makefile for lab 6, part 1
++#
++
++CC  = gcc
++CXX = g++
++
++INCLUDES = 
++CFLAGS   = -g -Wall $(INCLUDES)
++CXXFLAGS = -g -Wall $(INCLUDES)
++
++LDFLAGS = -g
++LDLIBS = 
++
++.PHONY: default
++default: http-server 
++
++http-server: http-server.o HandleHTTPRequest.o DieWithError.o
++# header dependency
++http-server.o: HandleHTTPRequest.o DieWithError.o
++HandleHTTPClient.o: DieWithError.o 
++DieWithError.o:
++
++.PHONY: clean
++clean:
++	rm -f *.o *~ a.out core http-server
++
++.PHONY: valgrind
++valgrind:
++	valgrind --leak-check=full ./http-server 33553 ~/Git/cs3157/lab7/part2/html localhost 43553
++
++.PHONY: novalgrind
++novalgrind:
++	./http-server 33553 ~/Git/cs3157/lab7/part2/html localhost 43553
++
++.PHONY: jae-mdb
++jae-mdb:
++	./jae/mdb-srv jae/mdb 43553
++
++.PHONY: jae-http
++jae-http:
++	./jae/http 33553 ~/Git/cs3157/lab7/part2/html localhost 43553
++
++.PHONY: connect
++connect: 
++	nc 127.0.0.1 33553
++
++.PHONY: all
++all: clean default
++
+diff --git a/http-server.c b/http-server.c
+new file mode 100644
+index 0000000..03d2568
+--- /dev/null
++++ b/http-server.c
+@@ -0,0 +1,68 @@
++#include "includes.h"
++#include <sys/stat.h>
++
++#define MAXPENDING 5    /* Maximum outstanding connection requests */
++
++void DieWithError(char *errorMessage);  /* Error handling function */
++void HandleHTTPRequest(char *wr, char *clntIP, int clntSocket);   /* TCP client handling function */
++
++int main(int argc, char *argv[])
++{
++    int servSock;                    /* Socket descriptor for server */
++    int clntSock;                    /* Socket descriptor for client */
++    struct sockaddr_in HTTPServAddr;  /* Local address */
++    struct sockaddr_in HTTPClntAddr;  /* Client address */
++    unsigned short HTTPServPort;      /* Server port */
++    char *webroot;
++    unsigned int clntLen;            /* Length of client address data structure */
++
++    // ignore SIGPIPE so that we don't terminate when we call
++    // send() on a disconnected socket.
++    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) 
++        DieWithError("signal() failed");
++
++    if (argc != 5)     /* Test for correct number of arguments */
++    {
++        fprintf(stderr, "Usage:  %s <server_port> <web_root> <mdb-lookup-host> <mdb-lookup-port>\n", argv[0]);
++        exit(1);
++    }
++
++    /* Where the files will be served from */ 
++    webroot = argv[2];
++
++    HTTPServPort = atoi(argv[1]);  /* First arg:  local port */
++    /* Create socket for incoming connections */
++    if ((servSock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
++        DieWithError("socket() failed");
++      
++    /* Construct local address structure */
++    memset(&HTTPServAddr, 0, sizeof(HTTPServAddr));   /* Zero out structure */
++    HTTPServAddr.sin_family = AF_INET;                /* Internet address family */
++    HTTPServAddr.sin_addr.s_addr = htonl(INADDR_ANY); /* Any incoming interface */
++    HTTPServAddr.sin_port = htons(HTTPServPort);      /* Local port */
++
++    /* Bind to the local address */
++    if (bind(servSock, (struct sockaddr *) &HTTPServAddr, sizeof(HTTPServAddr)) < 0)
++        DieWithError("bind() failed");
++
++    /* Mark the socket so it will listen for incoming connections */
++    if (listen(servSock, MAXPENDING) < 0)
++        DieWithError("listen() failed");
++    
++    for (;;) /* Run forever */
++    {
++        /* Set the size of the in-out parameter */
++        clntLen = sizeof(HTTPClntAddr);
++
++        /* Wait for a client to connect */
++        if ((clntSock = accept(servSock, (struct sockaddr *) &HTTPClntAddr, 
++                               &clntLen)) < 0)
++            DieWithError("accept() failed");
++
++        /* clntSock is connected to a client! */
++        char *clientIP = inet_ntoa(HTTPClntAddr.sin_addr);
++        HandleHTTPRequest(webroot,clientIP,clntSock);
++
++    }
++    /* NOT REACHED */
++}
+diff --git a/includes.h b/includes.h
+new file mode 100644
+index 0000000..1048217
+--- /dev/null
++++ b/includes.h
+@@ -0,0 +1,18 @@
++#ifndef __INCLUDES_H__
++#define __INCLUDES_H__
++
++#include <stdio.h>  /* for perror() */
++#include <stdlib.h> /* for exit() */
++#include <stdio.h>      /* for printf() and fprintf() */
++#include <sys/socket.h> /* for socket(), bind(), and connect() */
++#include <arpa/inet.h>  /* for sockaddr_in and inet_ntoa() */
++#include <stdlib.h>     /* for atoi() and exit() */
++#include <string.h>     /* for memset() */
++#include <unistd.h>     /* for close() */
++#include <stdlib.h>
++#include <assert.h>
++#include <string.h>
++#include <ctype.h>
++#include <signal.h>
++
++#endif
+-- 
+2.7.4
+
+
+From 507910fbc7748b7ceb0fb0438f16fee735465ed3 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Wed, 12 Apr 2017 11:31:20 -0400
+Subject: [PATCH 07/23] removed part2 dir
+
+---
+ part2/DieWithError.c      |   8 --
+ part2/HandleHTTPRequest.c | 186 ----------------------------------------------
+ part2/http-server.c       |  68 -----------------
+ 3 files changed, 262 deletions(-)
+ delete mode 100644 part2/DieWithError.c
+ delete mode 100644 part2/HandleHTTPRequest.c
+ delete mode 100644 part2/http-server.c
+
+diff --git a/part2/DieWithError.c b/part2/DieWithError.c
+deleted file mode 100644
+index c56afec..0000000
+--- a/part2/DieWithError.c
++++ /dev/null
+@@ -1,8 +0,0 @@
+-#include <stdio.h>  /* for perror() */
+-#include <stdlib.h> /* for exit() */
+-
+-void DieWithError(char *errorMessage)
+-{
+-    fprintf(stderr, "%s", errorMessage);
+-    exit(1);
+-}
+diff --git a/part2/HandleHTTPRequest.c b/part2/HandleHTTPRequest.c
+deleted file mode 100644
+index 8394119..0000000
+--- a/part2/HandleHTTPRequest.c
++++ /dev/null
+@@ -1,186 +0,0 @@
+-#include <stdio.h>      /* for printf() and fprintf() */
+-#include <sys/socket.h> /* for recv() and send() */
+-#include <unistd.h>     /* for close() */
+-#include <string.h>
+-#include <sys/stat.h>
+-#include <sys/types.h>
+-
+-#define BUF 4096   /* Size of receive buffer */
+-#define RESP501 "HTTP/1.0 Not Implemented\r\n"
+-#define HTML501 "<html>\n<body>\n<h1>\n501 Not Implemented\n</h1>\n</body>\n</html>\r\n"
+-#define RESP400 "HTTP/1.0 Bad Request\r\n"
+-#define HTML400 "<html>\n<body>\n<h1>\n400 Bad Request\n</h1>\n</body>\n</html>\r\n"
+-#define RESP404 "HTTP/1.0 Not Found\r\n"
+-#define HTML404 "<html>\n<body>\n<h1>\n404 Not Found\n</h1>\n</body>\n</html>\r\n"
+-
+-void DieWithError(char *errorMessage);  /* Error handling function */
+-
+-void sendErr(char *resp,char *err,char *errHTML,int sock) {
+-        // Send Header to Client
+-        snprintf(resp,strlen(err)+3,"%s""\r\n",err);
+-        if (send(sock,resp,strlen(err)+3,0) != strlen(err)+3)
+-            DieWithError("Failed to send Server Header Response 501");
+-
+-        // Send HTML to Browser
+-        snprintf(resp,strlen(errHTML)+3,"%s",errHTML);
+-        if (send(sock,resp,strlen(errHTML)+3,0) != strlen(errHTML)+3)
+-            DieWithError("Failed to send HTML 501");
+-        
+-        // Close Connection
+-        close(sock);
+-}
+-
+-void HandleHTTPRequest(char *wr, char *clntIP, int clntSocket)
+-{
+-    char clntRequest[BUF];      /* Buffer for echo string */ 
+-    char *token_separators = "\t \r\n";  
+-    char srvResponse[BUF];
+-    char *resp501 = RESP501;
+-    char *html501 = HTML501;
+-    char *resp400 = RESP400;
+-    char *html400 = HTML400;
+-    struct stat sb;
+-
+-    /*
+-    char *err501_status = "501 Not Implemented\r\n";
+-    char *err400_status = "400 Bad Request\r\n";
+-    char *ok_status = "HTTP/1.0 200 OK\r\n";
+-    char *pathArr[32];
+-    struct stat uri;
+-*/
+-    FILE *fd = fdopen(clntSocket, "r");
+-    if (fd == NULL)
+-        DieWithError("fdopen failed");
+-
+-    // read the 1st line
+-    if (fgets(clntRequest, sizeof(clntRequest), fd) == NULL) {
+-	if (ferror(fd))
+-	    DieWithError("IO error");
+-    } 
+-    // tokenize the first line before processing it 
+-    char *method = strtok(clntRequest, token_separators);
+-    char *requestURI = strtok(NULL, token_separators);
+-    char *proto = strtok(NULL, token_separators);
+-   
+-      
+-
+-    /* Check for propper request method
+-    *
+-    */
+-    if (strncmp("GET", method, 3) != 0) {
+-       // Log to Server
+-       fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+-       sendErr(srvResponse,resp501,html501,clntSocket);
+-   
+-    }
+-    
+-     /* Check for propper request protocol
+-    *
+-    */
+-    if (strncmp("HTTP/1.0",proto,9) != 0 && strncmp("HTTP/1.1",proto,9) != 0) {
+-       // Log to Server
+-       fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+-       sendErr(srvResponse,resp501,html501,clntSocket);
+-   }
+-   
+-   /* We need to construct the filepath from the requestURI 
+-    * First check if the URI begins with a "/"
+-    */
+-     
+-    
+-    if (strrchr(requestURI, '/') == NULL) {
+-       fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"400 Bad Request");
+-       sendErr(srvResponse,resp400,html400,clntSocket); 
+-    } 
+-
+-     stat(wr, &sb);
+-     if (S_ISDIR(sb.st_mode) && wr[strlen(wr)-1] != '/') {
+-        strcat(wr, "/index.html");
+-     } 
+-
+-    
+-
+-
+-    /* Read the rest of the header response up to and including the 
+-    * blank line.
+-    */
+-/*
+-    while (fgets(clntRequest, sizeof(clntRequest), fd) == NULL) {
+-       if (ferror(fd))
+-           DieWithError("IO error");
+-       if (strncmp(clntRequest,"\r\n",3) == 0) {
+-           break;
+-       }
+-   }  
+-   
+-*/
+-   
+-
+-/*
+-   // Now it's time to read the file.
+-   FILE *local = fopen(requestURI, "rb");
+-
+-   size_t n;
+-   while ((n = fread(srvResponse, 1, sizeof(srvResponse), local)) > 0) {
+-       if (fwrite(srvResponse, 1, n, fd) != n) 
+-       DieWithError("fwrite failed");
+-   }
+-   // fread() returns 0 on EOF or on error
+-   // so we need to check if there was an error.
+-   if (ferror(local))
+-       DieWithError("read err");
+-   // All done.  Clean up.
+-   
+-   fclose(local);
+-*/
+-
+-
+-/*    
+-    pathArr[0] = strtok(requestURI, "/");
+-        char **cap = pathArr+1;
+-        while((*cap++ = strtok(NULL,"/")))
+-       
+-            ;    
+-   */
+-    
+-   /*
+-    stat(strcat(wr,requestURI), &uri);
+-    
+-    //fprintf(stderr, "[DEBUG] [%s]\n", wr);
+-    //fprintf(stderr, "[DEBUG] [%s]\n", uri.st_mode);
+-    
+-    if (S_ISREG(uri.st_mode)) {
+-        
+-        snprintf(srvResponse, strlen(ok_status),"%s",ok_status);
+-        if ((send(clntSocket, srvResponse, strlen(srvResponse), 0)) != strlen(srvResponse))
+-            DieWithError("send() 501 Err - Failed");
+-        
+-         Send blank line 
+-        if ((send(clntSocket, bl, 3, 0)) != 3)
+-            DieWithError("send() 501 Err - Failed");
+-        
+-        FILE *fp = fopen(wr, "rb");
+-        
+-        if (fp == NULL)
+-         fprintf(stderr, "Can't open %s\n", wr);
+-
+-        size_t n = 0;
+-        while ((n = fread(srvResponse,1,BUF, fp)) > 0) {
+-            if(send(clntSocket, srvResponse, strlen(srvResponse), 0) != strlen(srvResponse))
+-                DieWithError("send html failed");
+-        }
+-        if(ferror(fp))
+-            DieWithError("fread failed");
+-    
+-        fprintf(stdout, "%s \"%s %s %s\" %s", 
+-                clientIP, method, requestURI, 
+-                proto, ok_status);
+-    
+-        fclose(fp);
+-    }
+-*/
+-
+-
+-    close(clntSocket);    /* Close client socket */
+-
+-}
+diff --git a/part2/http-server.c b/part2/http-server.c
+deleted file mode 100644
+index 03d2568..0000000
+--- a/part2/http-server.c
++++ /dev/null
+@@ -1,68 +0,0 @@
+-#include "includes.h"
+-#include <sys/stat.h>
+-
+-#define MAXPENDING 5    /* Maximum outstanding connection requests */
+-
+-void DieWithError(char *errorMessage);  /* Error handling function */
+-void HandleHTTPRequest(char *wr, char *clntIP, int clntSocket);   /* TCP client handling function */
+-
+-int main(int argc, char *argv[])
+-{
+-    int servSock;                    /* Socket descriptor for server */
+-    int clntSock;                    /* Socket descriptor for client */
+-    struct sockaddr_in HTTPServAddr;  /* Local address */
+-    struct sockaddr_in HTTPClntAddr;  /* Client address */
+-    unsigned short HTTPServPort;      /* Server port */
+-    char *webroot;
+-    unsigned int clntLen;            /* Length of client address data structure */
+-
+-    // ignore SIGPIPE so that we don't terminate when we call
+-    // send() on a disconnected socket.
+-    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) 
+-        DieWithError("signal() failed");
+-
+-    if (argc != 5)     /* Test for correct number of arguments */
+-    {
+-        fprintf(stderr, "Usage:  %s <server_port> <web_root> <mdb-lookup-host> <mdb-lookup-port>\n", argv[0]);
+-        exit(1);
+-    }
+-
+-    /* Where the files will be served from */ 
+-    webroot = argv[2];
+-
+-    HTTPServPort = atoi(argv[1]);  /* First arg:  local port */
+-    /* Create socket for incoming connections */
+-    if ((servSock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+-        DieWithError("socket() failed");
+-      
+-    /* Construct local address structure */
+-    memset(&HTTPServAddr, 0, sizeof(HTTPServAddr));   /* Zero out structure */
+-    HTTPServAddr.sin_family = AF_INET;                /* Internet address family */
+-    HTTPServAddr.sin_addr.s_addr = htonl(INADDR_ANY); /* Any incoming interface */
+-    HTTPServAddr.sin_port = htons(HTTPServPort);      /* Local port */
+-
+-    /* Bind to the local address */
+-    if (bind(servSock, (struct sockaddr *) &HTTPServAddr, sizeof(HTTPServAddr)) < 0)
+-        DieWithError("bind() failed");
+-
+-    /* Mark the socket so it will listen for incoming connections */
+-    if (listen(servSock, MAXPENDING) < 0)
+-        DieWithError("listen() failed");
+-    
+-    for (;;) /* Run forever */
+-    {
+-        /* Set the size of the in-out parameter */
+-        clntLen = sizeof(HTTPClntAddr);
+-
+-        /* Wait for a client to connect */
+-        if ((clntSock = accept(servSock, (struct sockaddr *) &HTTPClntAddr, 
+-                               &clntLen)) < 0)
+-            DieWithError("accept() failed");
+-
+-        /* clntSock is connected to a client! */
+-        char *clientIP = inet_ntoa(HTTPClntAddr.sin_addr);
+-        HandleHTTPRequest(webroot,clientIP,clntSock);
+-
+-    }
+-    /* NOT REACHED */
+-}
+-- 
+2.7.4
+
+
+From 6c089bc9536fb6b0252ee8db64ba15d6c98133e0 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sat, 15 Apr 2017 11:25:41 -0400
+Subject: [PATCH 08/23] modified .PHONY targets
+
+---
+ Makefile | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index f0283b3..bc8f483 100644
+--- a/Makefile
++++ b/Makefile
+@@ -28,19 +28,19 @@ clean:
+ 
+ .PHONY: valgrind
+ valgrind:
+-	valgrind --leak-check=full ./http-server 33553 ~/Git/cs3157/lab7/part2/html localhost 43553
++	valgrind --leak-check=full ./http-server 33553 ~/html localhost 43553
+ 
+ .PHONY: novalgrind
+ novalgrind:
+-	./http-server 33553 ~/Git/cs3157/lab7/part2/html localhost 43553
++	./http-server 33553 ~/html localhost 43553
+ 
+ .PHONY: jae-mdb
+ jae-mdb:
+-	./jae/mdb-srv jae/mdb 43553
++	./mdb-lookup-server mdb 43553
+ 
+ .PHONY: jae-http
+ jae-http:
+-	./jae/http 33553 ~/Git/cs3157/lab7/part2/html localhost 43553
++	./http 33553 ~/html localhost 43553
+ 
+ .PHONY: connect
+ connect: 
+-- 
+2.7.4
+
+
+From d92c7960b5ac791f8dce609bd94b842fa52e7126 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sat, 15 Apr 2017 11:26:56 -0400
+Subject: [PATCH 09/23] adjusted HandleHTTPRequest function prototype to match
+ the new return value
+
+---
+ http-server.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/http-server.c b/http-server.c
+index 03d2568..3f0edd6 100644
+--- a/http-server.c
++++ b/http-server.c
+@@ -4,7 +4,7 @@
+ #define MAXPENDING 5    /* Maximum outstanding connection requests */
+ 
+ void DieWithError(char *errorMessage);  /* Error handling function */
+-void HandleHTTPRequest(char *wr, char *clntIP, int clntSocket);   /* TCP client handling function */
++size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket);   /* TCP client handling function */
+ 
+ int main(int argc, char *argv[])
+ {
+-- 
+2.7.4
+
+
+From c0a894c474e2b5cbfbb099fdd70b75eb4bdecdd0 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sat, 15 Apr 2017 11:28:13 -0400
+Subject: [PATCH 10/23] revamped function to return a value for bytes sent in
+ the case it fails
+
+---
+ HandleHTTPRequest.c | 189 +++++++++++++++++++++++-----------------------------
+ 1 file changed, 82 insertions(+), 107 deletions(-)
+
+diff --git a/HandleHTTPRequest.c b/HandleHTTPRequest.c
+index e7e4979..71927eb 100644
+--- a/HandleHTTPRequest.c
++++ b/HandleHTTPRequest.c
+@@ -4,6 +4,7 @@
+ #include <string.h>
+ #include <sys/stat.h>
+ #include <sys/types.h>
++#include <stdlib.h>
+ 
+ #define BUF 4096   /* Size of receive buffer */
+ #define RESP501 "HTTP/1.0 Not Implemented\r\n"
+@@ -11,174 +12,148 @@
+ #define RESP400 "HTTP/1.0 Bad Request\r\n"
+ #define HTML400 "<html>\n<body>\n<h1>\n400 Bad Request\n</h1>\n</body>\n</html>\r\n"
+ #define RESP404 "HTTP/1.0 Not Found\r\n"
+-#define HTML404 "<html>\n<body>\n<h1>\n404 Not Found\n</h1>\n</body>\n</html>\r\n"
++#define HTML404 "<html>\n<body>\n<h1>\n404 File Not Found\n</h1>\n</body>\n</html>\r\n"
+ #define RESP200 "HTTP/1.0 200 OK\r\n"
+ 
+ void DieWithError(char *errorMessage);  /* Error handling function */
+ 
+ void sendErr(char *resp,char *err,char *errHTML,int sock) {
++       
+         // Send Header to Client
+         snprintf(resp,strlen(err)+3,"%s""\r\n",err);
+         if (send(sock,resp,strlen(err)+3,0) != strlen(err)+3)
+-            DieWithError("Failed to send Server Header Response 501");
++            DieWithError("Failed to send Server Header Response");
+ 
+         // Send HTML to Browser
+-        snprintf(resp,strlen(errHTML)+3,"%s",errHTML);
+-        if (send(sock,resp,strlen(errHTML)+3,0) != strlen(errHTML)+3)
+-            DieWithError("Failed to send HTML 501");
++        snprintf(resp,strlen(errHTML),"%s",errHTML);
++        if (send(sock,resp,strlen(errHTML),0) != strlen(errHTML))
++            DieWithError("Failed to send HTML");
+         
+-        // Close Connection
+-        close(sock);
+ }
+ 
+-void serveFile(char *buf, char *filePath, int clntSocket) {
+-    /* Log and Send 200 OK Response */
+-    int len; 
+-    struct stat sb;
+-    size_t n;
+-
+-    len = sprintf(buf, RESP200);
+-    if (send(clntSocket,buf,len,0) != len)
+-        DieWithError("Failed to Send Reponse Header");
+-    
+-    len = sprintf(buf, "\r\n");
+-    if (send(clntSocket,buf,len,0) != len)
+-        DieWithError("Failed to Send Reponse Header");
+-
+ 
+-   // Now it's time to read the file.
+-   FILE *local = fopen(filePath, "rb");
+-   stat(filePath, &sb);
+-   while ((n = fread(buf,1,BUF,local)) > 0) {
+-       if ((n = send(clntSocket,buf,strlen(buf),0)) != sb.st_size ) 
+-            DieWithError("fwrite failed");
+-   }
+-   // fread() returns 0 on EOF or on error
+-   // so we need to check if there was an error.
+-   if (ferror(local))
+-       DieWithError("read err");
+-   // All done.  Clean up.
+-   
+-   fclose(local);
+-}
+-
+-void HandleHTTPRequest(char *wr, char *clntIP, int clntSocket)
++size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket)
+ {
+     int  len;
+-    char buf[BUF];    
++    char buf[BUF];
++    char requestLine[BUF]; 
+     char srvResponse[BUF];
++    char path[1000];
+     char *token_separators = "\t \r\n";  
+-    char *reqLine;
+     char *resp501 = RESP501;
+     char *html501 = HTML501;
+     char *resp400 = RESP400;
+     char *html400 = HTML400;
++    char *resp404 = RESP404;
++    char *html404 = HTML404;
+     struct stat sb;
++    size_t bytesSent = 0;
+ 
+     FILE *fd = fdopen(clntSocket, "r+b");
+     if (fd == NULL)
+         DieWithError("fdopen failed");
+ 
+     // read the 1st line
+-    if (fgets(reqLine, sizeof(reqLine), fd) == NULL) {
++    if (fgets(requestLine, sizeof(requestLine), fd) == NULL) {
+ 	if (ferror(fd))
+ 	    DieWithError("IO error");
+     } 
+     // tokenize the first line before processing it 
+-    char *method = strtok(reqLine, token_separators);
++    char *method = strtok(requestLine, token_separators);
+     char *requestURI = strtok(NULL, token_separators);
+     char *proto = strtok(NULL, token_separators);
++  
+ 
+-    /* Check for propper request method
+-    *
+-    */
+-    if (strncmp("GET", method, 3) != 0) {
++    /* Check for propper request method */
++    if (!method || strncmp("GET", method, 3) != 0) {
+        // Log to Server
+        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+        sendErr(srvResponse,resp501,html501,clntSocket);
+-   
++       fclose(fd);
++       close(clntSocket);
++       return bytesSent;
+     }
+     
+-    /* Check for propper request protocol
+-    *
+-    */
+-    if (strncmp("HTTP/1.0",proto,9) != 0 && strncmp("HTTP/1.1",proto,9) != 0) {
++    /* Check for propper request protocol */
++    if (!proto || (strncmp("HTTP/1.0",proto,9) != 0 && strncmp("HTTP/1.1",proto,9) != 0)) {
+        // Log to Server
+        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+        sendErr(srvResponse,resp501,html501,clntSocket);
+-   }
++       fclose(fd);
++       close(clntSocket);
++       return bytesSent;
++    }
+    
+    /* We need to construct the filepath from the requestURI 
+-    * First check if the URI begins with a "/"
+-    */ 
+-    if (strrchr(requestURI, '/') == NULL) {
++    * First check if the URI begins with a "/" */ 
++    if (requestURI[0] != '/') {
+        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"400 Bad Request");
+        sendErr(srvResponse,resp400,html400,clntSocket); 
++       fclose(fd);
++       close(clntSocket);
++       return bytesSent;
+     } 
+-   
+     
++    /* Append index.html if the request ends with '/' */
++    if (requestURI[strlen(requestURI)-1] == '/') 
++        strcat(requestURI, "index.html");
++
++    /* Clear the buffer */
++    path[0] = '\0';
++    snprintf(path,BUF,"%s%s",wr,requestURI);
+     /* Read the rest of the header response up to and including the 
+     * blank line.
+     */
+     while (fgets(buf, sizeof(buf), fd) == NULL) {
+-       if (ferror(fd))
++        fprintf(stderr, "%s\n", buf);
++       if (ferror(fd)) {
+            DieWithError("IO error");
++       } 
+        if (strncmp(buf,"\r\n",3) == 0) {
+            break;
+        }
+     }
+ 
+-  fprintf(stderr, "%s\n",buf);
+-  fprintf(stderr, "%s\n",reqLine);
+-  fprintf(stderr, "%s\n%s\n%s\n",method, requestURI, proto);
+-
+-
+-    /*    
+-          pathArr[0] = strtok(requestURI, "/");
+-          char **cap = pathArr+1;
+-          while((*cap++ = strtok(NULL,"/")))
+-
+-          ;    
+-          */
+-    
+-   /*
+-    stat(strcat(wr,requestURI), &uri);
+-    
+-    //fprintf(stderr, "[DEBUG] [%s]\n", wr);
+-    //fprintf(stderr, "[DEBUG] [%s]\n", uri.st_mode);
+-    
+-    if (S_ISREG(uri.st_mode)) {
+-        
+-        snprintf(srvResponse, strlen(ok_status),"%s",ok_status);
+-        if ((send(clntSocket, srvResponse, strlen(srvResponse), 0)) != strlen(srvResponse))
+-            DieWithError("send() 501 Err - Failed");
+-        
+-         Send blank line 
+-        if ((send(clntSocket, bl, 3, 0)) != 3)
+-            DieWithError("send() 501 Err - Failed");
+-        
+-        FILE *fp = fopen(wr, "rb");
+-        
+-        if (fp == NULL)
+-         fprintf(stderr, "Can't open %s\n", wr);
++    // Try to fetch the file requestes 
++    if (stat(path, &sb) < 0) {
++        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"404 File Not Found");
++        sendErr(srvResponse,resp404,html404,clntSocket); 
++        fclose(fd);
++        close(clntSocket);
++        return bytesSent;
++    } else {
++       if (S_ISREG(sb.st_mode)) {
++           FILE *local = fopen(path, "rb");
++           char file_buf[BUF];
++
++           if (local == NULL)
++               fprintf(stderr, "Can't open %s\n", path);
++           
++           len = sprintf(buf, "HTTP/1.0 200 OK\r\n");
++           if (send(clntSocket, buf, len, 0) != len)
++               DieWithError("Couldn't send response");
++
++           len = sprintf(buf, "\r\n"); 
++           if (send(clntSocket, buf, len, 0) != len)
++               DieWithError("Couldn't send blank line");
++
++           /* Send the file */
++           while ((bytesSent = fread(file_buf,1,BUF,local)) > 0) {
++              if (send(clntSocket,file_buf,bytesSent,0) != bytesSent ) 
++                   DieWithError("fwrite failed");
++           }
++     
++           if (ferror(local))
++               DieWithError("read err");
++           
++           fclose(local);
++           fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
++       }
+ 
+-        size_t n = 0;
+-        while ((n = fread(srvResponse,1,BUF, fp)) > 0) {
+-            if(send(clntSocket, srvResponse, strlen(srvResponse), 0) != strlen(srvResponse))
+-                DieWithError("send html failed");
+-        }
+-        if(ferror(fp))
+-            DieWithError("fread failed");
+-    
+-        fprintf(stdout, "%s \"%s %s %s\" %s", 
+-                clientIP, method, requestURI, 
+-                proto, ok_status);
++    requestURI[0] = '\0';
++    fclose(fd);
++    close(clntSocket);    /* Close client socket */
++    return bytesSent;
+     
+-        fclose(fp);
+     }
+-*/
+-
+-
+-    close(clntSocket);    /* Close client socket */
+-
+ }
+-- 
+2.7.4
+
+
+From bb6ef9d57cddcee1026d24b28210e383b0986992 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sat, 15 Apr 2017 17:19:17 -0400
+Subject: [PATCH 11/23] Added more .PHONY targets for testing part2(b)
+
+---
+ Makefile | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/Makefile b/Makefile
+index bc8f483..48775f9 100644
+--- a/Makefile
++++ b/Makefile
+@@ -26,6 +26,14 @@ DieWithError.o:
+ clean:
+ 	rm -f *.o *~ a.out core http-server
+ 
++.PHONY: valgrind-mdb
++valgrind-mdb:
++	valgrind --leak-check=full ./mdb-lookup-server mdb 43553
++
++.PHONY: novalgrind-mdb
++novalgrind-mdb:
++	./mdb-lookup-server mdb 43553
++
+ .PHONY: valgrind
+ valgrind:
+ 	valgrind --leak-check=full ./http-server 33553 ~/html localhost 43553
+@@ -34,6 +42,7 @@ valgrind:
+ novalgrind:
+ 	./http-server 33553 ~/html localhost 43553
+ 
++
+ .PHONY: jae-mdb
+ jae-mdb:
+ 	./mdb-lookup-server mdb 43553
+-- 
+2.7.4
+
+
+From a2a923f3dd69c114cf565461fdcc62a0036e5b7a Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sat, 15 Apr 2017 17:20:37 -0400
+Subject: [PATCH 12/23] implemented mdb connection functionality
+
+---
+ http-server.c | 48 +++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 39 insertions(+), 9 deletions(-)
+
+diff --git a/http-server.c b/http-server.c
+index 3f0edd6..3f701c0 100644
+--- a/http-server.c
++++ b/http-server.c
+@@ -1,24 +1,30 @@
+ #include "includes.h"
+ #include <sys/stat.h>
++#include <arpa/inet.h>
++#include <netdb.h>
+ 
+ #define MAXPENDING 5    /* Maximum outstanding connection requests */
+ 
+ void DieWithError(char *errorMessage);  /* Error handling function */
+-size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket);   /* TCP client handling function */
++size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSocket);   /* TCP client handling function */
+ 
+ int main(int argc, char *argv[])
+ {
+-    int servSock;                    /* Socket descriptor for server */
+-    int clntSock;                    /* Socket descriptor for client */
++    int servSock;                     /* Socket descriptor for server */
++    int clntSock;                     /* Socket descriptor for client */
++    int mdbSock;                      /* Socket descriptor for mdb-server */
+     struct sockaddr_in HTTPServAddr;  /* Local address */
+     struct sockaddr_in HTTPClntAddr;  /* Client address */
++    struct sockaddr_in MDBServAddr;   /* MDB Serv address */
++    struct hostent *he;
+     unsigned short HTTPServPort;      /* Server port */
++    unsigned short MDBServPort;    /* MDBServer port */
++
+     char *webroot;
+-    unsigned int clntLen;            /* Length of client address data structure */
++    char *mdbIP;
++    unsigned int clntLen;             /* Length of client address data structure */
+ 
+-    // ignore SIGPIPE so that we don't terminate when we call
+-    // send() on a disconnected socket.
+-    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) 
++    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+         DieWithError("signal() failed");
+ 
+     if (argc != 5)     /* Test for correct number of arguments */
+@@ -30,6 +36,28 @@ int main(int argc, char *argv[])
+     /* Where the files will be served from */ 
+     webroot = argv[2];
+ 
++    /* Get server address */
++    if ((he = gethostbyname(argv[3])) == NULL) {
++        DieWithError("gethostbyname failed");
++    }
++
++    mdbIP = inet_ntoa(*(struct in_addr *) he->h_addr);
++
++    /* Create a socket for the MDB Server */
++    MDBServPort = atoi(argv[4]);
++    if((mdbSock = socket(PF_INET,SOCK_STREAM,IPPROTO_TCP)) < 0)
++        DieWithError("socket() failed");
++    /* Construct local address structure */
++    memset(&MDBServAddr, 0, sizeof(MDBServAddr));   /* Zero out structure */
++    MDBServAddr.sin_family = AF_INET;                /* Internet address family */
++    MDBServAddr.sin_addr.s_addr = inet_addr(mdbIP); /* Any incoming interface */
++    MDBServAddr.sin_port = htons(MDBServPort);      /* MDB Local port */
++
++    /* Connect to the MDB Server */
++    if (connect(mdbSock, (struct sockaddr *)&MDBServAddr,sizeof(MDBServAddr)) < 0) {
++        DieWithError("Conection to MDB failed");
++    }
++
+     HTTPServPort = atoi(argv[1]);  /* First arg:  local port */
+     /* Create socket for incoming connections */
+     if ((servSock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+@@ -50,7 +78,8 @@ int main(int argc, char *argv[])
+         DieWithError("listen() failed");
+     
+     for (;;) /* Run forever */
+-    {
++    { 
++      
+         /* Set the size of the in-out parameter */
+         clntLen = sizeof(HTTPClntAddr);
+ 
+@@ -61,7 +90,8 @@ int main(int argc, char *argv[])
+ 
+         /* clntSock is connected to a client! */
+         char *clientIP = inet_ntoa(HTTPClntAddr.sin_addr);
+-        HandleHTTPRequest(webroot,clientIP,clntSock);
++        HandleHTTPRequest(webroot,clientIP,clntSock, mdbSock);
++
+ 
+     }
+     /* NOT REACHED */
+-- 
+2.7.4
+
+
+From 2d28f829db333af1694ae380e6a6a9867e06df03 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sat, 15 Apr 2017 17:22:00 -0400
+Subject: [PATCH 13/23] server is working, with 1 moderate bug in path
+ resolution
+
+---
+ HandleHTTPRequest.c | 166 +++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 112 insertions(+), 54 deletions(-)
+
+diff --git a/HandleHTTPRequest.c b/HandleHTTPRequest.c
+index 71927eb..f495b20 100644
+--- a/HandleHTTPRequest.c
++++ b/HandleHTTPRequest.c
+@@ -1,9 +1,5 @@
+-#include <stdio.h>      /* for printf() and fprintf() */
+-#include <sys/socket.h> /* for recv() and send() */
+-#include <unistd.h>     /* for close() */
+-#include <string.h>
++#include "includes.h"
+ #include <sys/stat.h>
+-#include <sys/types.h>
+ #include <stdlib.h>
+ 
+ #define BUF 4096   /* Size of receive buffer */
+@@ -31,10 +27,38 @@ void sendErr(char *resp,char *err,char *errHTML,int sock) {
+         
+ }
+ 
++size_t sendContent(char *fileP, int sock) {
++    FILE *local = fopen(fileP, "rb");
++    char file_buf[BUF];
++    size_t len;
+ 
+-size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket)
++    if (local == NULL)
++        fprintf(stderr, "Can't open %s\n", fileP);
++       
++    len = sprintf(file_buf, "HTTP/1.0 200 OK\r\n");
++    if (send(sock, file_buf, len, 0) != len)
++        DieWithError("Couldn't send response");
++
++    len = sprintf(file_buf, "\r\n"); 
++    if (send(sock, file_buf, len, 0) != len)
++           DieWithError("Couldn't send blank line");
++
++    /* Send the file */
++    while ((len = fread(file_buf,1,BUF,local)) > 0) {
++       if (send(sock,file_buf,len,0) != len ) 
++           DieWithError("fwrite failed");
++    }
++    if (ferror(local))
++        DieWithError("read err");
++           
++    fclose(local);
++
++    return len;
++}
++
++
++size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSocket)
+ {
+-    int  len;
+     char buf[BUF];
+     char requestLine[BUF]; 
+     char srvResponse[BUF];
+@@ -46,9 +70,20 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket)
+     char *html400 = HTML400;
+     char *resp404 = RESP404;
+     char *html404 = HTML404;
++    char *str;
+     struct stat sb;
+     size_t bytesSent = 0;
+ 
++    const char* form =
++        "<h1>mdb-lookup</h1>\n"
++        "<p>\n"
++        "<form method=GET action=/mdb-lookup>\n"
++        "lookup: <input type=text name=key>\n"
++        "<input type=submit>\n"
++        "</form>\n"
++        "</p>\n";
++
++
+     FILE *fd = fdopen(clntSocket, "r+b");
+     if (fd == NULL)
+         DieWithError("fdopen failed");
+@@ -63,14 +98,13 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket)
+     char *requestURI = strtok(NULL, token_separators);
+     char *proto = strtok(NULL, token_separators);
+   
+-
+     /* Check for propper request method */
+     if (!method || strncmp("GET", method, 3) != 0) {
+        // Log to Server
+        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+        sendErr(srvResponse,resp501,html501,clntSocket);
+        fclose(fd);
+-       close(clntSocket);
++       //close(clntSocket);
+        return bytesSent;
+     }
+     
+@@ -80,80 +114,104 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket)
+        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+        sendErr(srvResponse,resp501,html501,clntSocket);
+        fclose(fd);
+-       close(clntSocket);
++       //close(clntSocket);
+        return bytesSent;
+     }
+    
+    /* We need to construct the filepath from the requestURI 
+-    * First check if the URI begins with a "/" */ 
+-    if (requestURI[0] != '/') {
++    * First check if the URI begins with a "/" */
++    str = strrchr(requestURI, '/');
++    if (requestURI[0] != '/' || strstr(requestURI, "/../") != NULL || strcmp(str, "/..") == 0) { 
+        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"400 Bad Request");
+        sendErr(srvResponse,resp400,html400,clntSocket); 
+        fclose(fd);
+-       close(clntSocket);
++       //close(clntSocket);
+        return bytesSent;
+     } 
+-    
+-    /* Append index.html if the request ends with '/' */
+-    if (requestURI[strlen(requestURI)-1] == '/') 
+-        strcat(requestURI, "index.html");
+ 
+-    /* Clear the buffer */
++    if (strcmp(requestURI, "/mdb-lookup") == 0){
++        int len;
++        len = sprintf(srvResponse, "HTTP/1.0 200 OK\r\n");
++        if (send(clntSocket, srvResponse, len, 0) != len)
++            DieWithError("Couldn't send response");
++
++         len = sprintf(srvResponse, "\r\n"); 
++        if (send(clntSocket, srvResponse, len, 0) != len)
++           DieWithError("Couldn't send blank line");
++        
++        if((bytesSent = send(clntSocket, form, strlen(form), 0)) != strlen(form))
++            DieWithError("Send Form failed");
++        
++        fclose(fd);
++        return bytesSent;
++     }
++
++    /* Append index.html if the request ends with '/' */
+     path[0] = '\0';
+-    snprintf(path,BUF,"%s%s",wr,requestURI);
++    if (requestURI[strlen(requestURI)-1] == '/') {
++        snprintf(path,BUF,"%s%s%s",wr,requestURI,"index.html");
++    } else{
++        snprintf(path,BUF,"%s%s",wr,requestURI);
++    }
++
++
++    
+     /* Read the rest of the header response up to and including the 
+     * blank line.
+     */
+     while (fgets(buf, sizeof(buf), fd) == NULL) {
+-        fprintf(stderr, "%s\n", buf);
+        if (ferror(fd)) {
+-           DieWithError("IO error");
++           // Close the socket and serve the next client
++           fclose(fd);
++           return bytesSent;
+        } 
+        if (strncmp(buf,"\r\n",3) == 0) {
+            break;
+        }
+     }
+ 
+-    // Try to fetch the file requestes 
+-    if (stat(path, &sb) < 0) {
++    /* Send a 404 error to the client if we can't find the file.
++    * also print a log to the server
++    */
++    if (stat(path, &sb) == -1) {    
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"404 File Not Found");
+         sendErr(srvResponse,resp404,html404,clntSocket); 
+         fclose(fd);
+-        close(clntSocket);
++       //close(clntSocket);
+         return bytesSent;
+-    } else {
+-       if (S_ISREG(sb.st_mode)) {
+-           FILE *local = fopen(path, "rb");
+-           char file_buf[BUF];
++    }
+ 
+-           if (local == NULL)
+-               fprintf(stderr, "Can't open %s\n", path);
+-           
+-           len = sprintf(buf, "HTTP/1.0 200 OK\r\n");
+-           if (send(clntSocket, buf, len, 0) != len)
+-               DieWithError("Couldn't send response");
+-
+-           len = sprintf(buf, "\r\n"); 
+-           if (send(clntSocket, buf, len, 0) != len)
+-               DieWithError("Couldn't send blank line");
+-
+-           /* Send the file */
+-           while ((bytesSent = fread(file_buf,1,BUF,local)) > 0) {
+-              if (send(clntSocket,file_buf,bytesSent,0) != bytesSent ) 
+-                   DieWithError("fwrite failed");
+-           }
+-     
+-           if (ferror(local))
+-               DieWithError("read err");
+-           
+-           fclose(local);
++    /* Send the requested content back to the client */
++    if (S_ISDIR(sb.st_mode)) {
++        /* Append "/index.html" */   
++        snprintf(path,BUF,"%s%s%s",wr,requestURI,"/index.html");
++        
++        /* Test the new path */
++        if(stat(path, &sb) == 0) { 
+            fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
+-       }
++           bytesSent = sendContent(path, clntSocket);
++        } else {
++            /* Send a 404 error to the client if we can't find the file.
++            * also print a log to the server
++            */
++            fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"404 File Not Found");
++            sendErr(srvResponse,resp404,html404,clntSocket); 
++            
++            /* Close the connection */
++            fclose(fd);
++           // close(clntSocket);
++            return bytesSent;
++        }   
+ 
++    } else if (stat(path, &sb) == 0 && S_ISREG(sb.st_mode)) {
++        /* Send the requested file */
++        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
++        bytesSent = sendContent(path, clntSocket);   
++    }
++
++    /* Clean up the requestURI for the next client */
+     requestURI[0] = '\0';
+-    fclose(fd);
+-    close(clntSocket);    /* Close client socket */
++    fclose(fd);           /* Close wrapper */
++   // close(clntSocket);    /* Close client socket */
+     return bytesSent;
+-    
+-    }
+ }
+-- 
+2.7.4
+
+
+From 1209f758ca8d05516e90618575be71ad0cc4d956 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sat, 15 Apr 2017 23:51:42 -0400
+Subject: [PATCH 14/23] still working on fixing the mdb lookup function
+
+---
+ HandleHTTPRequest.c | 81 ++++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 71 insertions(+), 10 deletions(-)
+
+diff --git a/HandleHTTPRequest.c b/HandleHTTPRequest.c
+index f495b20..681dd6a 100644
+--- a/HandleHTTPRequest.c
++++ b/HandleHTTPRequest.c
+@@ -15,15 +15,15 @@ void DieWithError(char *errorMessage);  /* Error handling function */
+ 
+ void sendErr(char *resp,char *err,char *errHTML,int sock) {
+        
+-        // Send Header to Client
+-        snprintf(resp,strlen(err)+3,"%s""\r\n",err);
+-        if (send(sock,resp,strlen(err)+3,0) != strlen(err)+3)
+-            DieWithError("Failed to send Server Header Response");
+-
+-        // Send HTML to Browser
+-        snprintf(resp,strlen(errHTML),"%s",errHTML);
+-        if (send(sock,resp,strlen(errHTML),0) != strlen(errHTML))
+-            DieWithError("Failed to send HTML");
++     // Send Header to Client
++     snprintf(resp,strlen(err)+3,"%s""\r\n",err);
++     if (send(sock,resp,strlen(err)+3,0) != strlen(err)+3)
++         DieWithError("Failed to send Server Header Response");
++
++     // Send HTML to Browser
++     snprintf(resp,strlen(errHTML),"%s",errHTML);
++     if (send(sock,resp,strlen(errHTML),0) != strlen(errHTML))
++         DieWithError("Failed to send HTML");
+         
+ }
+ 
+@@ -132,6 +132,9 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+     if (strcmp(requestURI, "/mdb-lookup") == 0){
+         int len;
+         len = sprintf(srvResponse, "HTTP/1.0 200 OK\r\n");
++
++        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
++        
+         if (send(clntSocket, srvResponse, len, 0) != len)
+             DieWithError("Couldn't send response");
+ 
+@@ -144,7 +147,65 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+         
+         fclose(fd);
+         return bytesSent;
+-     }
++    }
++        
++    if (strncmp(requestURI, "/mdb-lookup?key=",16) == 0) {
++        int len;
++        FILE *fdMDB = fdopen(mdbSocket, "rb");
++        char *tableTop = "<p><table border>\n";
++        char *tableRow = "<tr><td>";
++        
++        if (fd == NULL)
++            DieWithError("Couldn't open mdbSocket");
++        
++        len = strlen(form);
++        if(send(clntSocket, form, len, 0) != len)
++            DieWithError("Send Form failed");
++
++        len = strlen(tableTop);
++        if(send(clntSocket, tableTop, len, 0) != len)
++            DieWithError("Send Table failed");
++        
++        strcpy(buf, requestURI+16);
++        
++        len = strlen(buf);
++        if (send(mdbSocket, buf, len, 0) != len)
++            DieWithError("Couldn't send lookup to MDB Server");
++       
++        len = sprintf(buf,"\n");
++        if (send(mdbSocket, buf, len, 0) != len)
++            DieWithError("Couldn't send blank line to MDB Server");
++
++        while(fgets(buf, sizeof(buf), fdMDB) == NULL) {
++            if (ferror(fdMDB)) {
++                fprintf(stderr, "Somthing went wrong");
++            }
++            
++            len = snprintf(srvResponse,strlen(srvResponse), "%s%s</td></tr>\n",tableRow,buf);
++            if(send(clntSocket, srvResponse, len, 0) != len) {
++               DieWithError("Send Rows failed");
++            } 
++            if (strncmp(buf,"\n",2) == 0) {
++                break;
++            }
++        }
++        len = sprintf(srvResponse, "HTTP/1.0 200 OK\r\n");
++        if (send(clntSocket, srvResponse, len, 0) != len)
++            DieWithError("Couldn't send response");
++
++        len = sprintf(srvResponse, "\r\n"); 
++        if (send(clntSocket, srvResponse, len, 0) != len)
++           DieWithError("Couldn't send blank line");
++        
++
++        len = sprintf(srvResponse, "</table>\n</body></html>\r\n"); 
++        if (send(clntSocket, srvResponse, len, 0) != len)
++           DieWithError("Couldn't send end of HTML");
++
++        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
++        fclose(fd);     
++        return bytesSent;
++    }
+ 
+     /* Append index.html if the request ends with '/' */
+     path[0] = '\0';
+-- 
+2.7.4
+
+
+From c61ce3f90f39f95c7d1af26f57210ce0df04604a Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 18 Apr 2017 14:45:02 -0400
+Subject: [PATCH 15/23] this function now closes an active connection before
+ exiting the program
+
+---
+ DieWithError.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/DieWithError.c b/DieWithError.c
+index c56afec..ed9cfeb 100644
+--- a/DieWithError.c
++++ b/DieWithError.c
+@@ -1,8 +1,10 @@
+ #include <stdio.h>  /* for perror() */
+ #include <stdlib.h> /* for exit() */
++#include <unistd.h>
+ 
+-void DieWithError(char *errorMessage)
++void DieWithError(char *errorMessage, int socket)
+ {
++    close(socket);
+     fprintf(stderr, "%s", errorMessage);
+     exit(1);
+ }
+-- 
+2.7.4
+
+
+From 3c1819ededd2d94a9901430b751fd325dd9092a3 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 18 Apr 2017 14:50:39 -0400
+Subject: [PATCH 16/23] included Die function
+
+---
+ DieWithError.c |  7 ++++++-
+ http-server.c  | 25 ++++++++++++++-----------
+ 2 files changed, 20 insertions(+), 12 deletions(-)
+
+diff --git a/DieWithError.c b/DieWithError.c
+index ed9cfeb..684ec69 100644
+--- a/DieWithError.c
++++ b/DieWithError.c
+@@ -5,6 +5,11 @@
+ void DieWithError(char *errorMessage, int socket)
+ {
+     close(socket);
+-    fprintf(stderr, "%s", errorMessage);
++    fprintf(stderr, "%s\n", errorMessage);
++    exit(1);
++}
++void Die(char *errorMessage) 
++{
++    fprintf(stderr, "%s\n", errorMessage);
+     exit(1);
+ }
+diff --git a/http-server.c b/http-server.c
+index 3f701c0..ed6b7f3 100644
+--- a/http-server.c
++++ b/http-server.c
+@@ -5,7 +5,10 @@
+ 
+ #define MAXPENDING 5    /* Maximum outstanding connection requests */
+ 
+-void DieWithError(char *errorMessage);  /* Error handling function */
++void Die(char *errorMessage) {
++     fprintf(stderr, "%s\n", errorMessage);
++     exit(1);
++}
+ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSocket);   /* TCP client handling function */
+ 
+ int main(int argc, char *argv[])
+@@ -25,7 +28,7 @@ int main(int argc, char *argv[])
+     unsigned int clntLen;             /* Length of client address data structure */
+ 
+     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+-        DieWithError("signal() failed");
++        Die("signal() failed");
+ 
+     if (argc != 5)     /* Test for correct number of arguments */
+     {
+@@ -38,7 +41,7 @@ int main(int argc, char *argv[])
+ 
+     /* Get server address */
+     if ((he = gethostbyname(argv[3])) == NULL) {
+-        DieWithError("gethostbyname failed");
++        Die("gethostbyname failed");
+     }
+ 
+     mdbIP = inet_ntoa(*(struct in_addr *) he->h_addr);
+@@ -46,22 +49,22 @@ int main(int argc, char *argv[])
+     /* Create a socket for the MDB Server */
+     MDBServPort = atoi(argv[4]);
+     if((mdbSock = socket(PF_INET,SOCK_STREAM,IPPROTO_TCP)) < 0)
+-        DieWithError("socket() failed");
++        Die("socket() failed");
+     /* Construct local address structure */
+     memset(&MDBServAddr, 0, sizeof(MDBServAddr));   /* Zero out structure */
+-    MDBServAddr.sin_family = AF_INET;                /* Internet address family */
++    MDBServAddr.sin_family = AF_INET;               /* Internet address family */
+     MDBServAddr.sin_addr.s_addr = inet_addr(mdbIP); /* Any incoming interface */
+     MDBServAddr.sin_port = htons(MDBServPort);      /* MDB Local port */
+ 
+     /* Connect to the MDB Server */
+     if (connect(mdbSock, (struct sockaddr *)&MDBServAddr,sizeof(MDBServAddr)) < 0) {
+-        DieWithError("Conection to MDB failed");
++        Die("Conection to MDB failed");
+     }
+ 
+     HTTPServPort = atoi(argv[1]);  /* First arg:  local port */
+     /* Create socket for incoming connections */
+     if ((servSock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+-        DieWithError("socket() failed");
++        Die("socket() failed");
+       
+     /* Construct local address structure */
+     memset(&HTTPServAddr, 0, sizeof(HTTPServAddr));   /* Zero out structure */
+@@ -71,11 +74,11 @@ int main(int argc, char *argv[])
+ 
+     /* Bind to the local address */
+     if (bind(servSock, (struct sockaddr *) &HTTPServAddr, sizeof(HTTPServAddr)) < 0)
+-        DieWithError("bind() failed");
++        Die("bind() failed");
+ 
+     /* Mark the socket so it will listen for incoming connections */
+     if (listen(servSock, MAXPENDING) < 0)
+-        DieWithError("listen() failed");
++        Die("listen() failed");
+     
+     for (;;) /* Run forever */
+     { 
+@@ -86,11 +89,11 @@ int main(int argc, char *argv[])
+         /* Wait for a client to connect */
+         if ((clntSock = accept(servSock, (struct sockaddr *) &HTTPClntAddr, 
+                                &clntLen)) < 0)
+-            DieWithError("accept() failed");
++            Die("accept() failed");
+ 
+         /* clntSock is connected to a client! */
+         char *clientIP = inet_ntoa(HTTPClntAddr.sin_addr);
+-        HandleHTTPRequest(webroot,clientIP,clntSock, mdbSock);
++        HandleHTTPRequest(webroot,clientIP,clntSock,mdbSock);
+ 
+ 
+     }
+-- 
+2.7.4
+
+
+From 14ffafeb5241accf0d38908885790f5bb19fb3f1 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 18 Apr 2017 16:36:01 -0400
+Subject: [PATCH 17/23] Function now seems to pass most edge-case tests
+
+---
+ HandleHTTPRequest.c | 292 ++++++++++++++++++++++++++++------------------------
+ http-server.c       |   6 +-
+ 2 files changed, 158 insertions(+), 140 deletions(-)
+
+diff --git a/HandleHTTPRequest.c b/HandleHTTPRequest.c
+index 681dd6a..9ef352f 100644
+--- a/HandleHTTPRequest.c
++++ b/HandleHTTPRequest.c
+@@ -7,24 +7,24 @@
+ #define HTML501 "<html>\n<body>\n<h1>\n501 Not Implemented\n</h1>\n</body>\n</html>\r\n"
+ #define RESP400 "HTTP/1.0 Bad Request\r\n"
+ #define HTML400 "<html>\n<body>\n<h1>\n400 Bad Request\n</h1>\n</body>\n</html>\r\n"
+-#define RESP404 "HTTP/1.0 Not Found\r\n"
++#define RESP404 "HTTP/1.0 404 Not Found\r\n"
+ #define HTML404 "<html>\n<body>\n<h1>\n404 File Not Found\n</h1>\n</body>\n</html>\r\n"
+ #define RESP200 "HTTP/1.0 200 OK\r\n"
+ 
+-void DieWithError(char *errorMessage);  /* Error handling function */
++void DieWithError(char *errorMessage, int socket);  /* Error handling function */
+ 
+ void sendErr(char *resp,char *err,char *errHTML,int sock) {
+-       
+-     // Send Header to Client
+-     snprintf(resp,strlen(err)+3,"%s""\r\n",err);
+-     if (send(sock,resp,strlen(err)+3,0) != strlen(err)+3)
+-         DieWithError("Failed to send Server Header Response");
+-
+-     // Send HTML to Browser
+-     snprintf(resp,strlen(errHTML),"%s",errHTML);
+-     if (send(sock,resp,strlen(errHTML),0) != strlen(errHTML))
+-         DieWithError("Failed to send HTML");
+-        
++
++    // Send Header to Client
++    snprintf(resp,strlen(err)+3,"%s""\r\n",err);
++    if (send(sock,resp,strlen(err)+3,0) != strlen(err)+3)
++        DieWithError("Failed to send Server Header Response", sock);
++
++    // Send HTML to Browser
++    snprintf(resp,strlen(errHTML)+3,"%s\r\n",errHTML);
++    if (send(sock,resp,strlen(errHTML)+3,0) != strlen(errHTML)+3)
++        DieWithError("Failed to send HTML", sock);
++
+ }
+ 
+ size_t sendContent(char *fileP, int sock) {
+@@ -34,28 +34,39 @@ size_t sendContent(char *fileP, int sock) {
+ 
+     if (local == NULL)
+         fprintf(stderr, "Can't open %s\n", fileP);
+-       
++
+     len = sprintf(file_buf, "HTTP/1.0 200 OK\r\n");
+     if (send(sock, file_buf, len, 0) != len)
+-        DieWithError("Couldn't send response");
++        DieWithError("Couldn't send response", sock);
+ 
+     len = sprintf(file_buf, "\r\n"); 
+     if (send(sock, file_buf, len, 0) != len)
+-           DieWithError("Couldn't send blank line");
++        DieWithError("Couldn't send blank line", sock);
+ 
+     /* Send the file */
+     while ((len = fread(file_buf,1,BUF,local)) > 0) {
+-       if (send(sock,file_buf,len,0) != len ) 
+-           DieWithError("fwrite failed");
++        if (send(sock,file_buf,len,0) != len ) 
++            DieWithError("fwrite failed", sock);
+     }
+     if (ferror(local))
+-        DieWithError("read err");
+-           
++        DieWithError("read err", sock);
++
+     fclose(local);
+ 
+     return len;
+ }
+ 
++void sendOK(char *buffer, int sock) {
++    int len;
++
++    len = sprintf(buffer, "HTTP/1.0 200 OK\r\n");
++    if (send(sock, buffer, len, 0) != len)
++        DieWithError("Couldn't send response", sock);
++
++    len = sprintf(buffer, "\r\n"); 
++    if (send(sock, buffer, len, 0) != len)
++        DieWithError("Couldn't send blank line", sock); 
++}
+ 
+ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSocket)
+ {
+@@ -83,196 +94,205 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+         "</form>\n"
+         "</p>\n";
+ 
+-
+     FILE *fd = fdopen(clntSocket, "r+b");
+     if (fd == NULL)
+-        DieWithError("fdopen failed");
++        DieWithError("fdopen failed", clntSocket);
+ 
+     // read the 1st line
+     if (fgets(requestLine, sizeof(requestLine), fd) == NULL) {
+-	if (ferror(fd))
+-	    DieWithError("IO error");
++        if (ferror(fd))
++            DieWithError("IO error", clntSocket);
+     } 
++    
+     // tokenize the first line before processing it 
+     char *method = strtok(requestLine, token_separators);
+     char *requestURI = strtok(NULL, token_separators);
+     char *proto = strtok(NULL, token_separators);
+-  
++
+     /* Check for propper request method */
+-    if (!method || strncmp("GET", method, 3) != 0) {
+-       // Log to Server
+-       fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+-       sendErr(srvResponse,resp501,html501,clntSocket);
+-       fclose(fd);
+-       //close(clntSocket);
+-       return bytesSent;
++    if (!method) {
++        sendErr(srvResponse,resp501,html501,clntSocket);
++        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
++        fclose(fd);
++        return bytesSent;
++    } else if (strncmp("GET", method, 3) != 0) {
++        // Log to Server
++        sendErr(srvResponse,resp501,html501,clntSocket);
++        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
++        fclose(fd);
++        return bytesSent;
+     }
+-    
++
+     /* Check for propper request protocol */
+-    if (!proto || (strncmp("HTTP/1.0",proto,9) != 0 && strncmp("HTTP/1.1",proto,9) != 0)) {
+-       // Log to Server
+-       fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+-       sendErr(srvResponse,resp501,html501,clntSocket);
+-       fclose(fd);
+-       //close(clntSocket);
+-       return bytesSent;
++    if (!proto) {
++        sendErr(srvResponse,resp501,html501,clntSocket);
++        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
++        fclose(fd);
++        return bytesSent;      
++   } else if(strncmp("HTTP/1.0",proto,9) != 0 && strncmp("HTTP/1.1",proto,9) != 0) {
++        // Log to Server
++        sendErr(srvResponse,resp501,html501,clntSocket);
++        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
++        fclose(fd);
++        return bytesSent;
+     }
+-   
+-   /* We need to construct the filepath from the requestURI 
+-    * First check if the URI begins with a "/" */
++
++    /* We need to construct the filepath from the requestURI 
++     * First check if the URI begins with a "/" */
++
+     str = strrchr(requestURI, '/');
+     if (requestURI[0] != '/' || strstr(requestURI, "/../") != NULL || strcmp(str, "/..") == 0) { 
+-       fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"400 Bad Request");
+-       sendErr(srvResponse,resp400,html400,clntSocket); 
+-       fclose(fd);
+-       //close(clntSocket);
+-       return bytesSent;
++        sendErr(srvResponse,resp400,html400,clntSocket); 
++        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"400 Bad Request");
++        fclose(fd);
++        return bytesSent;
+     } 
+ 
+     if (strcmp(requestURI, "/mdb-lookup") == 0){
+-        int len;
+-        len = sprintf(srvResponse, "HTTP/1.0 200 OK\r\n");
+-
+-        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
+-        
+-        if (send(clntSocket, srvResponse, len, 0) != len)
+-            DieWithError("Couldn't send response");
+-
+-         len = sprintf(srvResponse, "\r\n"); 
+-        if (send(clntSocket, srvResponse, len, 0) != len)
+-           DieWithError("Couldn't send blank line");
+-        
++        sendOK(srvResponse,clntSocket); 
+         if((bytesSent = send(clntSocket, form, strlen(form), 0)) != strlen(form))
+-            DieWithError("Send Form failed");
+-        
++            DieWithError("Send Form failed", clntSocket);
++        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
+         fclose(fd);
+         return bytesSent;
+     }
+-        
++
+     if (strncmp(requestURI, "/mdb-lookup?key=",16) == 0) {
+         int len;
+-        FILE *fdMDB = fdopen(mdbSocket, "rb");
+         char *tableTop = "<p><table border>\n";
+         char *tableRow = "<tr><td>";
+-        
+-        if (fd == NULL)
+-            DieWithError("Couldn't open mdbSocket");
+-        
++
++        /* Read the rest of the header response up to and including the 
++         * blank line.
++         */
++        while (fgets(buf, sizeof(buf), fd) == NULL) {
++            if (ferror(fd)) {
++                // Close the socket and serve the next client
++                fclose(fd);
++                return bytesSent;
++            }   
++            if (strncmp(buf,"\r\n",3) == 0) {
++                break;
++            } 
++        }
++
++        /* Sending the 200 OK response back to the client */
++        sendOK(srvResponse,clntSocket); 
++
+         len = strlen(form);
+         if(send(clntSocket, form, len, 0) != len)
+-            DieWithError("Send Form failed");
++            DieWithError("Send Form failed", clntSocket);
+ 
+         len = strlen(tableTop);
+         if(send(clntSocket, tableTop, len, 0) != len)
+-            DieWithError("Send Table failed");
+-        
++            DieWithError("Send Table failed", clntSocket);
++
++        /* Wrap the mdbSocket in FILE* to use fgets */
++        FILE *fdMDB = fdopen(mdbSocket, "rb");
++        if (fd == NULL)
++            DieWithError("Couldn't open mdbSocket", clntSocket);
++
++        /* parse the query */
+         strcpy(buf, requestURI+16);
+-        
++        strcat(buf,"\n"); // append the /n character
+         len = strlen(buf);
+         if (send(mdbSocket, buf, len, 0) != len)
+-            DieWithError("Couldn't send lookup to MDB Server");
+-       
+-        len = sprintf(buf,"\n");
+-        if (send(mdbSocket, buf, len, 0) != len)
+-            DieWithError("Couldn't send blank line to MDB Server");
++            DieWithError("Couldn't send lookup to MDB Server", clntSocket);
+ 
+-        while(fgets(buf, sizeof(buf), fdMDB) == NULL) {
++        /* Read results from MDBServer one line at a time */
++        while(fgets(buf, sizeof(buf), fdMDB) != NULL) {
+             if (ferror(fdMDB)) {
+                 fprintf(stderr, "Somthing went wrong");
+             }
+-            
+-            len = snprintf(srvResponse,strlen(srvResponse), "%s%s</td></tr>\n",tableRow,buf);
+-            if(send(clntSocket, srvResponse, len, 0) != len) {
+-               DieWithError("Send Rows failed");
+-            } 
+             if (strncmp(buf,"\n",2) == 0) {
+                 break;
+             }
++            /* Send each result to the client as it comes from
++             * MDBServer. This will populate one row of our table
++             */
++            len = sprintf(srvResponse,"%s%s</td></tr>\n",tableRow,buf);
++            if(send(clntSocket, srvResponse, len, 0) != len) {
++                DieWithError("Send Rows failed", clntSocket);
++            }
+         }
+-        len = sprintf(srvResponse, "HTTP/1.0 200 OK\r\n");
+-        if (send(clntSocket, srvResponse, len, 0) != len)
+-            DieWithError("Couldn't send response");
+-
+-        len = sprintf(srvResponse, "\r\n"); 
+-        if (send(clntSocket, srvResponse, len, 0) != len)
+-           DieWithError("Couldn't send blank line");
+-        
+ 
++        /* Send the HTML content up to the begining of the results table */
+         len = sprintf(srvResponse, "</table>\n</body></html>\r\n"); 
+         if (send(clntSocket, srvResponse, len, 0) != len)
+-           DieWithError("Couldn't send end of HTML");
+-
++            DieWithError("Couldn't send end of HTML", clntSocket);
++        /* Log the transaction */
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
+         fclose(fd);     
+         return bytesSent;
+     }
+ 
+-    /* Append index.html if the request ends with '/' */
++
++    /* Read the rest of the header response up to and including the 
++     * blank line.
++     */
++    while (fgets(buf, sizeof(buf), fd) == NULL) {
++        if (ferror(fd)) {
++            // Close the socket and serve the next client
++            fclose(fd);
++            return bytesSent;
++        } 
++        if (strncmp(buf,"\r\n",3) == 0) {
++            break;
++        }
++    }
++
+     path[0] = '\0';
++    snprintf(path,BUF,"%s%s",wr,requestURI);
++    /* Append index.html if the request ends with '/' */
+     if (requestURI[strlen(requestURI)-1] == '/') {
+-        snprintf(path,BUF,"%s%s%s",wr,requestURI,"index.html");
++        snprintf(path,BUF,"%s%sindex.html",wr,requestURI);
+     } else{
++        /* just pass along the request appended to webroot.*/
+         snprintf(path,BUF,"%s%s",wr,requestURI);
+     }
+ 
+ 
+-    
+-    /* Read the rest of the header response up to and including the 
+-    * blank line.
+-    */
+-    while (fgets(buf, sizeof(buf), fd) == NULL) {
+-       if (ferror(fd)) {
+-           // Close the socket and serve the next client
+-           fclose(fd);
+-           return bytesSent;
+-       } 
+-       if (strncmp(buf,"\r\n",3) == 0) {
+-           break;
+-       }
+-    }
+-
+-    /* Send a 404 error to the client if we can't find the file.
+-    * also print a log to the server
+-    */
+-    if (stat(path, &sb) == -1) {    
++    /* test the path */
++    if (stat(path, &sb) == -1) {
++        /* Send a 404 error to the client if we can't find the file.
++         * also print a log to the server
++         */    
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"404 File Not Found");
+         sendErr(srvResponse,resp404,html404,clntSocket); 
+-        fclose(fd);
+-       //close(clntSocket);
++        close(clntSocket);
+         return bytesSent;
+-    }
++    } 
++
+ 
+-    /* Send the requested content back to the client */
++    /* is it a directory? */
+     if (S_ISDIR(sb.st_mode)) {
+-        /* Append "/index.html" */   
+-        snprintf(path,BUF,"%s%s%s",wr,requestURI,"/index.html");
++
++        /* Append /index.html and test the new path */
++        snprintf(path,BUF,"%s%s/index.html",wr,requestURI);
+         
+-        /* Test the new path */
+-        if(stat(path, &sb) == 0) { 
+-           fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
+-           bytesSent = sendContent(path, clntSocket);
++        if (stat(path, &sb) == 0 && S_ISREG(sb.st_mode)) {
++            /* Send out index.html from the new path we created */
++            fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
++            bytesSent = sendContent(path, clntSocket);   
++ 
+         } else {
+-            /* Send a 404 error to the client if we can't find the file.
+-            * also print a log to the server
+-            */
+-            fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"404 File Not Found");
++                
+             sendErr(srvResponse,resp404,html404,clntSocket); 
+-            
+-            /* Close the connection */
+-            fclose(fd);
+-           // close(clntSocket);
++            fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"404 File Not Found");
++            close(clntSocket);
+             return bytesSent;
+-        }   
++        
++        }
++
++    } else if (S_ISREG(sb.st_mode)) {
+ 
+-    } else if (stat(path, &sb) == 0 && S_ISREG(sb.st_mode)) {
+         /* Send the requested file */
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
+         bytesSent = sendContent(path, clntSocket);   
++
+     }
+ 
+     /* Clean up the requestURI for the next client */
+-    requestURI[0] = '\0';
+     fclose(fd);           /* Close wrapper */
+-   // close(clntSocket);    /* Close client socket */
+     return bytesSent;
+ }
+diff --git a/http-server.c b/http-server.c
+index ed6b7f3..92c247b 100644
+--- a/http-server.c
++++ b/http-server.c
+@@ -5,10 +5,8 @@
+ 
+ #define MAXPENDING 5    /* Maximum outstanding connection requests */
+ 
+-void Die(char *errorMessage) {
+-     fprintf(stderr, "%s\n", errorMessage);
+-     exit(1);
+-}
++void Die(char *errorMessage);
++
+ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSocket);   /* TCP client handling function */
+ 
+ int main(int argc, char *argv[])
+-- 
+2.7.4
+
+
+From 057372e71955dc3d2d09e92d054139036b28780d Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 18 Apr 2017 16:38:24 -0400
+Subject: [PATCH 18/23] added the function definition for Die and DieWithError
+
+---
+ http-server.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/http-server.c b/http-server.c
+index 92c247b..7dd4b57 100644
+--- a/http-server.c
++++ b/http-server.c
+@@ -6,8 +6,8 @@
+ #define MAXPENDING 5    /* Maximum outstanding connection requests */
+ 
+ void Die(char *errorMessage);
+-
+-size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSocket);   /* TCP client handling function */
++void DieWithError(char *errorMessage, int sock);
++size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSocket);
+ 
+ int main(int argc, char *argv[])
+ {
+@@ -72,11 +72,11 @@ int main(int argc, char *argv[])
+ 
+     /* Bind to the local address */
+     if (bind(servSock, (struct sockaddr *) &HTTPServAddr, sizeof(HTTPServAddr)) < 0)
+-        Die("bind() failed");
++        DieWithError("bind() failed", servSock);
+ 
+     /* Mark the socket so it will listen for incoming connections */
+     if (listen(servSock, MAXPENDING) < 0)
+-        Die("listen() failed");
++        DieWithError("listen() failed", servSock);
+     
+     for (;;) /* Run forever */
+     { 
+@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
+         /* Wait for a client to connect */
+         if ((clntSock = accept(servSock, (struct sockaddr *) &HTTPClntAddr, 
+                                &clntLen)) < 0)
+-            Die("accept() failed");
++            DieWithError("accept() failed", clntSock);
+ 
+         /* clntSock is connected to a client! */
+         char *clientIP = inet_ntoa(HTTPClntAddr.sin_addr);
+-- 
+2.7.4
+
+
+From 2f33f7dd0b5a643c3010e8dc3e4804d8df74c3c1 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 18 Apr 2017 16:48:24 -0400
+Subject: [PATCH 19/23] Added README.txt
+
+---
+ README.txt | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/README.txt b/README.txt
+index 66dfd3e..c0af94a 100644
+--- a/README.txt
++++ b/README.txt
+@@ -1,11 +1,13 @@
+ This file should contain:
+ 
+-  - your name
+-  - your UNI
+-  - lab assignment number
+-  - description for each part
+-  
+-The description should indicate whether your solution for the part is
+-working or not.  You may also want to include anything else you would
+-like to communicate to the grader such as extra functionalities you
+-implemented or how you tried to fix your non-working code.
++  - Michael Introini
++  - mbi2105
++  - lab 7
++  - description:
++
++  - Part 1: Added the files from Jae's example website to a folder
++    on my home drive ~/html/cs3157/tng
++  - Part 2: Working as per the requirements.
++    Included the "includes.h" file to resolve all required header
++    files.
++ 
+-- 
+2.7.4
+
+
+From 55e7e28eb882f10b445998e67f54d045aaf918dd Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Wed, 19 Apr 2017 01:03:33 -0400
+Subject: [PATCH 20/23] 99% working, one moderate bug left to get
+
+---
+ HandleHTTPRequest.c | 30 ++++++++++++++++--------------
+ 1 file changed, 16 insertions(+), 14 deletions(-)
+
+diff --git a/HandleHTTPRequest.c b/HandleHTTPRequest.c
+index 9ef352f..0eacb01 100644
+--- a/HandleHTTPRequest.c
++++ b/HandleHTTPRequest.c
+@@ -3,22 +3,22 @@
+ #include <stdlib.h>
+ 
+ #define BUF 4096   /* Size of receive buffer */
+-#define RESP501 "HTTP/1.0 Not Implemented\r\n"
++#define RESP501 "HTTP/1.0 501 Not Implemented\r\n"
+ #define HTML501 "<html>\n<body>\n<h1>\n501 Not Implemented\n</h1>\n</body>\n</html>\r\n"
+-#define RESP400 "HTTP/1.0 Bad Request\r\n"
++#define RESP400 "HTTP/1.0 400 Bad Request\r\n"
+ #define HTML400 "<html>\n<body>\n<h1>\n400 Bad Request\n</h1>\n</body>\n</html>\r\n"
+ #define RESP404 "HTTP/1.0 404 Not Found\r\n"
+ #define HTML404 "<html>\n<body>\n<h1>\n404 File Not Found\n</h1>\n</body>\n</html>\r\n"
+ #define RESP200 "HTTP/1.0 200 OK\r\n"
+ 
+ void DieWithError(char *errorMessage, int socket);  /* Error handling function */
+-
++void Die(char *errorMessage);
+ void sendErr(char *resp,char *err,char *errHTML,int sock) {
+ 
+     // Send Header to Client
+     snprintf(resp,strlen(err)+3,"%s""\r\n",err);
+     if (send(sock,resp,strlen(err)+3,0) != strlen(err)+3)
+-        DieWithError("Failed to send Server Header Response", sock);
++        DieWithError("Failed to send Server Header Response",sock);
+ 
+     // Send HTML to Browser
+     snprintf(resp,strlen(errHTML)+3,"%s\r\n",errHTML);
+@@ -111,29 +111,29 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+ 
+     /* Check for propper request method */
+     if (!method) {
+-        sendErr(srvResponse,resp501,html501,clntSocket);
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+-        fclose(fd);
++        sendErr(srvResponse,resp501,html501,clntSocket);
++        close(clntSocket); 
+         return bytesSent;
+     } else if (strncmp("GET", method, 3) != 0) {
+         // Log to Server
+-        sendErr(srvResponse,resp501,html501,clntSocket);
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+-        fclose(fd);
++        sendErr(srvResponse,resp501,html501,clntSocket);
++        close(clntSocket);
+         return bytesSent;
+     }
+ 
+     /* Check for propper request protocol */
+     if (!proto) {
+-        sendErr(srvResponse,resp501,html501,clntSocket);
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+-        fclose(fd);
++        sendErr(srvResponse,resp501,html501,clntSocket);
++        close(clntSocket);
+         return bytesSent;      
+    } else if(strncmp("HTTP/1.0",proto,9) != 0 && strncmp("HTTP/1.1",proto,9) != 0) {
+         // Log to Server
+-        sendErr(srvResponse,resp501,html501,clntSocket);
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+-        fclose(fd);
++        sendErr(srvResponse,resp501,html501,clntSocket);
++        close(clntSocket);
+         return bytesSent;
+     }
+ 
+@@ -142,9 +142,9 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+ 
+     str = strrchr(requestURI, '/');
+     if (requestURI[0] != '/' || strstr(requestURI, "/../") != NULL || strcmp(str, "/..") == 0) { 
+-        sendErr(srvResponse,resp400,html400,clntSocket); 
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"400 Bad Request");
+-        fclose(fd);
++        sendErr(srvResponse,resp400,html400,clntSocket);
++        close(clntSocket);
+         return bytesSent;
+     } 
+ 
+@@ -293,6 +293,8 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+     }
+ 
+     /* Clean up the requestURI for the next client */
++    requestURI[0] = '\0';
+     fclose(fd);           /* Close wrapper */
++    close(clntSocket);
+     return bytesSent;
+ }
+-- 
+2.7.4
+
+
+From 77d72ec51d496fe77ceaa797ea69923120bc4b1e Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Wed, 19 Apr 2017 02:18:48 -0400
+Subject: [PATCH 21/23] fully functioning as per the requirements, needs some
+ more comments
+
+---
+ HandleHTTPRequest.c | 41 +++++++++++++++++++++++++++++------------
+ 1 file changed, 29 insertions(+), 12 deletions(-)
+
+diff --git a/HandleHTTPRequest.c b/HandleHTTPRequest.c
+index 0eacb01..ad7d221 100644
+--- a/HandleHTTPRequest.c
++++ b/HandleHTTPRequest.c
+@@ -100,8 +100,14 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+ 
+     // read the 1st line
+     if (fgets(requestLine, sizeof(requestLine), fd) == NULL) {
+-        if (ferror(fd))
++        if (ferror(fd)){
+             DieWithError("IO error", clntSocket);
++        } else {
++            fprintf(stderr,"%s \"   \" 400 Bad Request\n",clntIP);
++            fclose(fd);
++            close(clntSocket);
++            return bytesSent;
++        }
+     } 
+     
+     // tokenize the first line before processing it 
+@@ -109,34 +115,43 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+     char *requestURI = strtok(NULL, token_separators);
+     char *proto = strtok(NULL, token_separators);
+ 
+-    /* Check for propper request method */
+-    if (!method) {
++    /* Check for propper request protocol */
++    if (proto == NULL) {
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+         sendErr(srvResponse,resp501,html501,clntSocket);
+-        close(clntSocket); 
+-        return bytesSent;
+-    } else if (strncmp("GET", method, 3) != 0) {
++        fclose(fd);
++        close(clntSocket);
++        return bytesSent;      
++   } else if (strncmp("HTTP/1.0",proto,9) != 0 && strncmp("HTTP/1.1",proto,9) != 0) {
+         // Log to Server
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+         sendErr(srvResponse,resp501,html501,clntSocket);
++        fclose(fd);
+         close(clntSocket);
+         return bytesSent;
+-    }
+-
+-    /* Check for propper request protocol */
+-    if (!proto) {
++    } else if (requestURI == NULL) {
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+         sendErr(srvResponse,resp501,html501,clntSocket);
++        fclose(fd);
+         close(clntSocket);
+-        return bytesSent;      
+-   } else if(strncmp("HTTP/1.0",proto,9) != 0 && strncmp("HTTP/1.1",proto,9) != 0) {
++        return bytesSent;
++    } else if (method == NULL) {
++        fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
++        sendErr(srvResponse,resp501,html501,clntSocket);
++        fclose(fd);
++        close(clntSocket); 
++        return bytesSent;
++    } else if (strncmp("GET", method, 3) != 0) {
+         // Log to Server
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"501 Not Implemented");
+         sendErr(srvResponse,resp501,html501,clntSocket);
++        fclose(fd);
+         close(clntSocket);
+         return bytesSent;
+     }
+ 
++    
++
+     /* We need to construct the filepath from the requestURI 
+      * First check if the URI begins with a "/" */
+ 
+@@ -259,6 +274,7 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+          */    
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"404 File Not Found");
+         sendErr(srvResponse,resp404,html404,clntSocket); 
++        fclose(fd);
+         close(clntSocket);
+         return bytesSent;
+     } 
+@@ -279,6 +295,7 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+                 
+             sendErr(srvResponse,resp404,html404,clntSocket); 
+             fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"404 File Not Found");
++            fclose(fd);
+             close(clntSocket);
+             return bytesSent;
+         
+-- 
+2.7.4
+
+
+From 7a95b73e9f820d3587c15b7d194fb72c701dd028 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Wed, 19 Apr 2017 20:47:17 -0400
+Subject: [PATCH 22/23] Added comments
+
+---
+ http-server.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/http-server.c b/http-server.c
+index 7dd4b57..fe687f2 100644
+--- a/http-server.c
++++ b/http-server.c
+@@ -5,8 +5,15 @@
+ 
+ #define MAXPENDING 5    /* Maximum outstanding connection requests */
+ 
++/* Terminates the Program with an Error Message */
+ void Die(char *errorMessage);
+-void DieWithError(char *errorMessage, int sock);
++
++/* Terminates the Program and closes
++ * Close the socket passed as parameter
++ */
++void DieWithError(char *errorMessage, int sock); 
++
++/* Handle the request */
+ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSocket);
+ 
+ int main(int argc, char *argv[])
+@@ -17,10 +24,9 @@ int main(int argc, char *argv[])
+     struct sockaddr_in HTTPServAddr;  /* Local address */
+     struct sockaddr_in HTTPClntAddr;  /* Client address */
+     struct sockaddr_in MDBServAddr;   /* MDB Serv address */
+-    struct hostent *he;
++    struct hostent *he;               /* Server IP */
+     unsigned short HTTPServPort;      /* Server port */
+-    unsigned short MDBServPort;    /* MDBServer port */
+-
++    unsigned short MDBServPort;       /* MDBServer port */
+     char *webroot;
+     char *mdbIP;
+     unsigned int clntLen;             /* Length of client address data structure */
+-- 
+2.7.4
+
+
+From 456716af7de35090c09f18c65c3ccec2470e58ce Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Wed, 19 Apr 2017 20:48:07 -0400
+Subject: [PATCH 23/23] Added comments and corrected a bug caused by an extra
+ blank line
+
+---
+ HandleHTTPRequest.c | 90 ++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 48 insertions(+), 42 deletions(-)
+
+diff --git a/HandleHTTPRequest.c b/HandleHTTPRequest.c
+index ad7d221..b96b14b 100644
+--- a/HandleHTTPRequest.c
++++ b/HandleHTTPRequest.c
+@@ -4,68 +4,76 @@
+ 
+ #define BUF 4096   /* Size of receive buffer */
+ #define RESP501 "HTTP/1.0 501 Not Implemented\r\n"
+-#define HTML501 "<html>\n<body>\n<h1>\n501 Not Implemented\n</h1>\n</body>\n</html>\r\n"
++#define HTML501 "<html>\n<body>\n<h1>\n501 Not Implemented\n</h1>\n</body>\n</html>"
+ #define RESP400 "HTTP/1.0 400 Bad Request\r\n"
+-#define HTML400 "<html>\n<body>\n<h1>\n400 Bad Request\n</h1>\n</body>\n</html>\r\n"
++#define HTML400 "<html>\n<body>\n<h1>\n400 Bad Request\n</h1>\n</body>\n</html>"
+ #define RESP404 "HTTP/1.0 404 Not Found\r\n"
+-#define HTML404 "<html>\n<body>\n<h1>\n404 File Not Found\n</h1>\n</body>\n</html>\r\n"
++#define HTML404 "<html>\n<body>\n<h1>\n404 File Not Found\n</h1>\n</body>\n</html>"
+ #define RESP200 "HTTP/1.0 200 OK\r\n"
+ 
+-void DieWithError(char *errorMessage, int socket);  /* Error handling function */
++void DieWithError(char *errorMessage, int socket); 
+ void Die(char *errorMessage);
+-void sendErr(char *resp,char *err,char *errHTML,int sock) {
++
++/* Send Error Headers and HTML to the client */
++void sendErr(char *buffer,char *err,char *errHTML,int sock) {
++    size_t len;
+ 
+     // Send Header to Client
+-    snprintf(resp,strlen(err)+3,"%s""\r\n",err);
+-    if (send(sock,resp,strlen(err)+3,0) != strlen(err)+3)
+-        DieWithError("Failed to send Server Header Response",sock);
++    snprintf(buffer,BUF,"%s\r\n",err);
++    if ((len = send(sock,buffer,strlen(err),0)) != strlen(err))
++        DieWithError("Failed to send Server Header response",sock);
++    
++    snprintf(buffer,BUF,"%s","\r\n"); 
++    if ((len = send(sock,buffer,strlen("\r\n"), 0)) != strlen("\r\n"))
++        DieWithError("Couldn't send blank line", sock); 
+ 
+     // Send HTML to Browser
+-    snprintf(resp,strlen(errHTML)+3,"%s\r\n",errHTML);
+-    if (send(sock,resp,strlen(errHTML)+3,0) != strlen(errHTML)+3)
++    snprintf(buffer,BUF,"%s\r\n",errHTML);
++    if ((len = send(sock,buffer,strlen(errHTML),0)) != strlen(errHTML))
+         DieWithError("Failed to send HTML", sock);
+ 
+ }
+ 
++// Send the 200 OK header
++void sendOK(char *buffer, int sock) {
++    size_t len;
++
++    snprintf(buffer,BUF,"%s\r\n",RESP200);
++    if ((len = send(sock,buffer,strlen(RESP200),0)) != strlen(RESP200))
++        DieWithError("Couldn't send response", sock);
++
++    snprintf(buffer,BUF,"%s","\r\n"); 
++    if ((len = send(sock,buffer,strlen("\r\n"),0)) != strlen("\r\n"))
++        DieWithError("Couldn't send blank line", sock); 
++
++}
++
++/* This function will send content to the client
++ * when a valid request has been made and the 
++ * content exists.
++ */
+ size_t sendContent(char *fileP, int sock) {
+     FILE *local = fopen(fileP, "rb");
+     char file_buf[BUF];
+     size_t len;
+-
++    
+     if (local == NULL)
+         fprintf(stderr, "Can't open %s\n", fileP);
+ 
+-    len = sprintf(file_buf, "HTTP/1.0 200 OK\r\n");
+-    if (send(sock, file_buf, len, 0) != len)
+-        DieWithError("Couldn't send response", sock);
+-
+-    len = sprintf(file_buf, "\r\n"); 
+-    if (send(sock, file_buf, len, 0) != len)
+-        DieWithError("Couldn't send blank line", sock);
++    sendOK(file_buf, sock);
+ 
+     /* Send the file */
+     while ((len = fread(file_buf,1,BUF,local)) > 0) {
+         if (send(sock,file_buf,len,0) != len ) 
+             DieWithError("fwrite failed", sock);
+     }
++
+     if (ferror(local))
+         DieWithError("read err", sock);
+ 
+     fclose(local);
+ 
+-    return len;
+-}
+-
+-void sendOK(char *buffer, int sock) {
+-    int len;
+-
+-    len = sprintf(buffer, "HTTP/1.0 200 OK\r\n");
+-    if (send(sock, buffer, len, 0) != len)
+-        DieWithError("Couldn't send response", sock);
+-
+-    len = sprintf(buffer, "\r\n"); 
+-    if (send(sock, buffer, len, 0) != len)
+-        DieWithError("Couldn't send blank line", sock); 
++    return len; // returns the byte count for the file sent 
+ }
+ 
+ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSocket)
+@@ -148,13 +156,10 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+         fclose(fd);
+         close(clntSocket);
+         return bytesSent;
+-    }
+-
+-    
++    } 
+ 
+     /* We need to construct the filepath from the requestURI 
+      * First check if the URI begins with a "/" */
+-
+     str = strrchr(requestURI, '/');
+     if (requestURI[0] != '/' || strstr(requestURI, "/../") != NULL || strcmp(str, "/..") == 0) { 
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"400 Bad Request");
+@@ -169,6 +174,7 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+             DieWithError("Send Form failed", clntSocket);
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
+         fclose(fd);
++        close(clntSocket);
+         return bytesSent;
+     }
+ 
+@@ -184,7 +190,7 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+             if (ferror(fd)) {
+                 // Close the socket and serve the next client
+                 fclose(fd);
+-                return bytesSent;
++                DieWithError("Server Terminated without a response", clntSocket);
+             }   
+             if (strncmp(buf,"\r\n",3) == 0) {
+                 break;
+@@ -231,7 +237,7 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+             }
+         }
+ 
+-        /* Send the HTML content up to the begining of the results table */
++        /* Send the rest of the HTML */
+         len = sprintf(srvResponse, "</table>\n</body></html>\r\n"); 
+         if (send(clntSocket, srvResponse, len, 0) != len)
+             DieWithError("Couldn't send end of HTML", clntSocket);
+@@ -241,7 +247,6 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+         return bytesSent;
+     }
+ 
+-
+     /* Read the rest of the header response up to and including the 
+      * blank line.
+      */
+@@ -249,7 +254,7 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+         if (ferror(fd)) {
+             // Close the socket and serve the next client
+             fclose(fd);
+-            return bytesSent;
++            DieWithError("Server Terminated without a response", clntSocket);
+         } 
+         if (strncmp(buf,"\r\n",3) == 0) {
+             break;
+@@ -266,7 +271,6 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+         snprintf(path,BUF,"%s%s",wr,requestURI);
+     }
+ 
+-
+     /* test the path */
+     if (stat(path, &sb) == -1) {
+         /* Send a 404 error to the client if we can't find the file.
+@@ -290,6 +294,8 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+             /* Send out index.html from the new path we created */
+             fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
+             bytesSent = sendContent(path, clntSocket);   
++            fclose(fd);           /* Close wrapper */
++            close(clntSocket);
+  
+         } else {
+                 
+@@ -306,12 +312,12 @@ size_t HandleHTTPRequest(const char *wr, char *clntIP, int clntSocket, int mdbSo
+         /* Send the requested file */
+         fprintf(stderr,"%s \"%s %s %s\" %s\n",clntIP,method,requestURI,proto,"200 OK");
+         bytesSent = sendContent(path, clntSocket);   
++        fclose(fd);           /* Close wrapper */
++        close(clntSocket);
+ 
+     }
+ 
+     /* Clean up the requestURI for the next client */
+     requestURI[0] = '\0';
+-    fclose(fd);           /* Close wrapper */
+-    close(clntSocket);
+     return bytesSent;
+ }
+-- 
+2.7.4
+

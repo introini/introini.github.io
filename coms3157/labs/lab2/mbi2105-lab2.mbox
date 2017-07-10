@@ -1,0 +1,1072 @@
+From 56703d59b56350706cf2efe141a06faedfdd6568 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Tue, 7 Feb 2017 23:43:14 -0500
+Subject: [PATCH 01/10] isort.c: creating an array based on user input and
+ filling that array with random numbers is now working as expected. TODO: Need
+ to implement sorting to get ascending and descending copies of the original
+ array.
+
+---
+ part1/Makefile | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+ part1/isort.c  | 36 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 82 insertions(+)
+ create mode 100644 part1/Makefile
+ create mode 100644 part1/isort.c
+
+diff --git a/part1/Makefile b/part1/Makefile
+new file mode 100644
+index 0000000..55fa5b1
+--- /dev/null
++++ b/part1/Makefile
+@@ -0,0 +1,46 @@
++# Makefile
++
++# Set compiler variables for C and C++
++CC = gcc
++CXX = g++
++
++# Create INCLUDES variable for use if needed
++INCLUDES =
++
++# Set flags for compiling C and C++
++# Debugging: -g
++# Enable all warnings: -Wall  
++CFLAGS = -g -Wall $(INCLUDES)
++CXXFLAGS = -g -Wall $(INCLUDES)
++
++# Set flag for linking
++# Debugging: -g
++LDFLAGS = -g
++
++# Create LDLIBS variable for linking libraries
++LDLIBS = 
++
++# ------------ #
++# First target #
++# ------------ #
++
++isort: isort.o
++
++# ------------------- #
++# Dependent target(s) #
++# ------------------- #
++
++isort.o: isort.c
++
++# --------------- #
++# PHONY target(s) #
++# --------------- #
++
++.PHONY: clean
++clean:
++	rm -f *.o a.out core isort
++
++.PHONY: all
++all: clean isort
++
++
+diff --git a/part1/isort.c b/part1/isort.c
+new file mode 100644
+index 0000000..086d8f5
+--- /dev/null
++++ b/part1/isort.c
+@@ -0,0 +1,36 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <time.h>
++int main() {
++
++    int SIZE;
++    scanf("%d", &SIZE);
++    srandom(time(NULL));
++
++    // Allocate memory for original array
++    int *p = (int *) malloc(SIZE * sizeof(int));
++
++    if (p == NULL) {
++        perror("malloc failed");
++        exit(1);
++    }
++
++    // Fill the array with random numbers
++    for (int i = 0; i<SIZE; i++)
++        p[i] = random()%99;
++
++    // Print the array
++    printf("original: ");
++
++    for (int i = 0; i<SIZE; i++)
++        printf("%d ", *(p+i)); 
++
++    printf("\n");
++
++    // Deallocate memory for original array
++    free(p);
++
++
++    return 0;
++}
++
+-- 
+2.7.4
+
+
+From b19238e1b8757d5de95510137c940a894de97902 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Mon, 13 Feb 2017 09:04:12 -0500
+Subject: [PATCH 02/10] Fixed array initialization (initializing elements to
+ 0). Also implemented the array copy functionality.
+
+---
+ part1/isort.c | 80 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 78 insertions(+), 2 deletions(-)
+
+diff --git a/part1/isort.c b/part1/isort.c
+index 086d8f5..7f496f4 100644
+--- a/part1/isort.c
++++ b/part1/isort.c
+@@ -1,12 +1,42 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <time.h>
++#include <string.h>
++void sort(int *a, int len);
++void sort(int *a, int len)
++{
++  int i = 0;
++
++  while (i < len)
++  {
++     int tmp = *a;
++     printf("is %d < %d\n", *(a+i), tmp);
++     if (*(a+i) < tmp) {
++        tmp = *(a+i);
++     }
++    i++; 
++  }
++}
++void sort_integer_array(int *begin, int *end, int ascending);
++void sort_integer_array(int *begin, int *end, int ascending)
++{ 
++    printf("%d\n", (int)(end-begin+1));
++    
++    sort(begin, (int)(end-begin+1));
++}
++
+ int main() {
+ 
+     int SIZE;
+     scanf("%d", &SIZE);
+     srandom(time(NULL));
+ 
++    /*
++     *
++     * Original Array
++     *
++     */
++
+     // Allocate memory for original array
+     int *p = (int *) malloc(SIZE * sizeof(int));
+ 
+@@ -15,9 +45,41 @@ int main() {
+         exit(1);
+     }
+ 
++    // Set each byte equal to 0
++    memset(p, 0, SIZE * sizeof(int));
++
+     // Fill the array with random numbers
+     for (int i = 0; i<SIZE; i++)
+-        p[i] = random()%99;
++        p[i] = random()%100;
++
++    /*
++     *
++     * First Copy of Original Array
++     *
++     */
++
++    // Allocate space for a copy of the Original Array
++    int *p2 = (int *) malloc(SIZE * sizeof(int));
++     // Set each byte equal to 0
++    memset(p2, 0, SIZE * sizeof(int));
++    
++    // Copy the array
++    memcpy(p2,p, SIZE * sizeof(int));
++   
++
++     /*
++     *
++     * Sort each array Array
++     *
++     */
++     
++    sort_integer_array(p2, &p2[SIZE-1],1);
++     
++    /*
++     *
++     * Print each array
++     *
++     */
+ 
+     // Print the array
+     printf("original: ");
+@@ -27,9 +89,23 @@ int main() {
+ 
+     printf("\n");
+ 
++    // Printing sorted
++    printf("ascending: ");
++
++    for (int i = 0; i<SIZE; i++)
++        printf("%d ", *(p2+i)); 
++
++    printf("\n");
++
++    /*
++     *
++     * Free Memory
++     *
++     */
++
+     // Deallocate memory for original array
+     free(p);
+-
++    free(p2);
+ 
+     return 0;
+ }
+-- 
+2.7.4
+
+
+From eb69ac6b3f4184e54624301f8f1ec973fc059d8d Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Mon, 13 Feb 2017 13:13:33 -0500
+Subject: [PATCH 03/10] Implemented qsort() as per the lab instructions (using
+ sort_integer_array()), and completed the array copy functionality as well as
+ the correct output formatting.
+
+---
+ part1/isort.c | 93 +++++++++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 62 insertions(+), 31 deletions(-)
+
+diff --git a/part1/isort.c b/part1/isort.c
+index 7f496f4..b10c57e 100644
+--- a/part1/isort.c
++++ b/part1/isort.c
+@@ -2,27 +2,36 @@
+ #include <stdlib.h>
+ #include <time.h>
+ #include <string.h>
+-void sort(int *a, int len);
+-void sort(int *a, int len)
++int cmpIntDescending(const void *p1, const void *p2)
+ {
+-  int i = 0;
+-
+-  while (i < len)
+-  {
+-     int tmp = *a;
+-     printf("is %d < %d\n", *(a+i), tmp);
+-     if (*(a+i) < tmp) {
+-        tmp = *(a+i);
+-     }
+-    i++; 
+-  }
++    int x = *(int *)p1;
++    int y = *(int *)p2;
++    if (x < y){
++       return 1;
++    } else if (x > y){
++       return -1;
++    } else {
++       return 0;
++    }
++}
++int cmpIntAscending(const void *p1, const void *p2)
++{
++    int x = *(int *)p1;
++    int y = *(int *)p2;
++    if (x < y){
++       return -1;
++    } else if (x > y){
++       return 1;
++    } else {
++       return 0;
++    }
+ }
+-void sort_integer_array(int *begin, int *end, int ascending);
+ void sort_integer_array(int *begin, int *end, int ascending)
+-{ 
+-    printf("%d\n", (int)(end-begin+1));
+-    
+-    sort(begin, (int)(end-begin+1));
++{
++   if (ascending == 1) 
++       qsort(begin, (int)(end-begin+1), sizeof(int), &cmpIntAscending);
++   else if (ascending == 0)
++       qsort(begin, (int)(end-begin+1), sizeof(int), &cmpIntDescending);
+ }
+ 
+ int main() {
+@@ -56,25 +65,37 @@ int main() {
+      *
+      * First Copy of Original Array
+      *
+-     */
+-
++    */
++   
++    // Allocate space for a copy of the Original Array
++    int *p1 = (int *) malloc(SIZE * sizeof(int));
++   
++    // Set each byte equal to 0
++    memset(p1, 0, SIZE * sizeof(int));
++    
++    // Copy the array
++    memcpy(p1,p, SIZE * sizeof(int));
++    
++    // Sort the array in Ascending order
++    sort_integer_array(p1, &p1[SIZE-1],1);
++ 
++    /*
++     *
++     * Second Copy of Original Array
++     *
++    */
++   
+     // Allocate space for a copy of the Original Array
+     int *p2 = (int *) malloc(SIZE * sizeof(int));
+-     // Set each byte equal to 0
++   
++    // Set each byte equal to 0
+     memset(p2, 0, SIZE * sizeof(int));
+     
+     // Copy the array
+     memcpy(p2,p, SIZE * sizeof(int));
+-   
+-
+-     /*
+-     *
+-     * Sort each array Array
+-     *
+-     */
+-     
+-    sort_integer_array(p2, &p2[SIZE-1],1);
+-     
++    
++    // Sort the array in Ascending order
++    sort_integer_array(p2, &p2[SIZE-1],0);
+     /*
+      *
+      * Print each array
+@@ -93,6 +114,15 @@ int main() {
+     printf("ascending: ");
+ 
+     for (int i = 0; i<SIZE; i++)
++        printf("%d ", *(p1+i)); 
++
++    printf("\n");
++
++    
++    // Printing sorted
++    printf("descending: ");
++
++    for (int i = 0; i<SIZE; i++)
+         printf("%d ", *(p2+i)); 
+ 
+     printf("\n");
+@@ -105,6 +135,7 @@ int main() {
+ 
+     // Deallocate memory for original array
+     free(p);
++    free(p1);
+     free(p2);
+ 
+     return 0;
+-- 
+2.7.4
+
+
+From 3052d81f2a62a375b515ebbec6af386c7cf00c8a Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Wed, 15 Feb 2017 21:00:44 -0500
+Subject: [PATCH 04/10] passing argv as return value (Jae's steps to solving
+ this problem)
+
+---
+ part2/Makefile | 50 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+ create mode 100644 part2/Makefile
+
+diff --git a/part2/Makefile b/part2/Makefile
+new file mode 100644
+index 0000000..58a141b
+--- /dev/null
++++ b/part2/Makefile
+@@ -0,0 +1,50 @@
++# Makefile
++
++# Set compiler variables for C and C++
++CC = gcc
++CXX = g++
++
++# Create INCLUDES variable for use if needed
++INCLUDES =
++
++# Set flags for compiling C and C++
++# Debugging: -g
++# Enable all warnings: -Wall  
++CFLAGS = -g -Wall $(INCLUDES)
++CXXFLAGS = -g -Wall $(INCLUDES)
++
++# Set flag for linking
++# Debugging: -g
++LDFLAGS = -g
++
++# Create LDLIBS variable for linking libraries
++LDLIBS = 
++
++# ------------ #
++# First target #
++# ------------ #
++
++twecho: twecho.o
++
++# ------------------- #
++# Dependent target(s) #
++# ------------------- #
++
++twecho.o: twecho.c
++
++# --------------- #
++# PHONY target(s) #
++# --------------- #
++
++.PHONY: clean
++clean:
++	rm -f *.o a.out core twecho
++
++.PHONY: valgrind
++valgrind:
++	valgrind ./twecho one two three
++
++.PHONY: all
++all: clean twecho
++
++
+-- 
+2.7.4
+
+
+From d239aa94f95b8a39afff548a1eaaab626a20403a Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Wed, 15 Feb 2017 21:27:11 -0500
+Subject: [PATCH 05/10]  Copied contents from argv over to dup - Step 3 of
+ Jae's method
+
+---
+ part2/twecho.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/part2/twecho.c b/part2/twecho.c
+index c70e975..32d1c1d 100644
+--- a/part2/twecho.c
++++ b/part2/twecho.c
+@@ -9,12 +9,20 @@
+ 
+ static char **duplicateArgs(int argc, char **argv)
+ {
++    char **dup = argv; //Lives on the Stack.
++    int i;
+ 
++    for ( i=0 ; i<argc ; i++ )
++    {
++        dup[i] = argv[i];
++    }
++
++    return dup;
+ }
+ 
+ static void freeDuplicatedArgs(char **copy)
+ {
+-
++  
+ }
+ 
+ /*
+-- 
+2.7.4
+
+
+From b3b2642bde57dc8b918d89dbade268fd08f2d32a Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Thu, 16 Feb 2017 01:00:44 -0500
+Subject: [PATCH 06/10] Vertical array allocated and content copied from argv.
+
+---
+ part2/twecho.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/part2/twecho.c b/part2/twecho.c
+index 32d1c1d..2128d97 100644
+--- a/part2/twecho.c
++++ b/part2/twecho.c
+@@ -9,20 +9,27 @@
+ 
+ static char **duplicateArgs(int argc, char **argv)
+ {
+-    char **dup = argv; //Lives on the Stack.
+     int i;
++    char **cp = malloc((argc+1) * sizeof(char *));
+ 
++    if (cp == NULL)
++    {
++        perror("malloc failed");
++        exit(1);
++    }
++    memset(cp,0,argc+1 * sizeof(char *));
++    
+     for ( i=0 ; i<argc ; i++ )
+     {
+-        dup[i] = argv[i];
++        cp[i] = argv[i];
+     }
+ 
+-    return dup;
++    return cp;
+ }
+ 
+ static void freeDuplicatedArgs(char **copy)
+ {
+-  
++    free(copy);
+ }
+ 
+ /*
+-- 
+2.7.4
+
+
+From 97c0cade7e8886b5d447fe2e1ce80d80765864d4 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 17 Feb 2017 09:23:21 -0500
+Subject: [PATCH 07/10] Capitalization working, though there is a bug causing
+ 32bytes to be lost in the heap.
+
+---
+ part2/twecho.c | 43 ++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 36 insertions(+), 7 deletions(-)
+
+diff --git a/part2/twecho.c b/part2/twecho.c
+index 2128d97..6180c31 100644
+--- a/part2/twecho.c
++++ b/part2/twecho.c
+@@ -1,35 +1,64 @@
+ /*
+  * twecho
+  */
+-
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <ctype.h>
+ 
++/*
++ * We need to capitalize each letter as it gets
++ * copied over to the duplicate array. Additionally, 
++ * we need to 
++ */
++void strcp(char *t,const char *s)
++{
++    while((*t++ = toupper(*s++))) ; 
++}
+ static char **duplicateArgs(int argc, char **argv)
+ {
+     int i;
+-    char **cp = malloc((argc+1) * sizeof(char *));
++    char **cp = (char **) malloc((argc+1) * sizeof(char *));
++    // Need to allocate enough space for each argument
++    // PLUS a terminating zero. So we'll allocate
++    // argc+1 space
+ 
+     if (cp == NULL)
+     {
+         perror("malloc failed");
+         exit(1);
+     }
+-    memset(cp,0,argc+1 * sizeof(char *));
+-    
++    memset(cp,'\0',((argc+1) * sizeof(char *)));
++
+     for ( i=0 ; i<argc ; i++ )
+     {
+-        cp[i] = argv[i];
++
++        cp[i] = (char *) malloc(strlen(argv[i])+1 * sizeof(char));
++
++        if (cp[i] == NULL)
++        {
++            perror("malloc failed");
++            exit(1);
++        }
++
++        memset(cp[i],'\0',strlen(argv[i])+1 * sizeof(char));
++        strcp(cp[i],argv[i]);
+     }
+ 
+     return cp;
+ }
+ 
+ static void freeDuplicatedArgs(char **copy)
+-{
+-    free(copy);
++{  
++  //printf("copy: %lu\n", sizeof(copy));
++  while(*copy != 0)
++  {
++      free(*copy++);
++      //printf("*copy: %lu\n", sizeof(*copy++));
++      //printf("%s\n",*copy++);
++  }
++  free(copy);
++  //printf("**copy: %lu\n", sizeof(copy));
+ }
+ 
+ /*
+-- 
+2.7.4
+
+
+From 988e0ca51feaedfab72658bd9873db6c2b2c3099 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 17 Feb 2017 11:06:08 -0500
+Subject: [PATCH 08/10] Fixed all leaks. Created a pointer to copy to store the
+ address in order to free it after all of its elements have been free'd.
+
+---
+ part2/twecho.c | 68 ++++++++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 54 insertions(+), 14 deletions(-)
+
+diff --git a/part2/twecho.c b/part2/twecho.c
+index 6180c31..fb80cc3 100644
+--- a/part2/twecho.c
++++ b/part2/twecho.c
+@@ -7,41 +7,77 @@
+ #include <ctype.h>
+ 
+ /*
+- * We need to capitalize each letter as it gets
+- * copied over to the duplicate array. Additionally, 
+- * we need to 
++ * We need to capitalize each word as it gets
++ * copied over to the duplicate array. So we'll take
++ * each letter and capitalize it before it gets copied
++ * over.
+  */
+ void strcp(char *t,const char *s)
+ {
++    /* The while loop will return false once
++     * it gets to the terminating 0 and exit.
++     * In the meantime, each letter from *s get's 
++     * capitalized with 'toupper()' and assigned to *t
++     * then each increments. 
++     */
+     while((*t++ = toupper(*s++))) ; 
+ }
+ static char **duplicateArgs(int argc, char **argv)
+ {
+-    int i;
++    int i; // Index variable
++    /* Vertical Array:
++     * Need to allocate enough space for each pointer
++     * PLUS a terminating zero. So we'll allocate
++     * argc+1 space * 8 bytes.
++     */
+     char **cp = (char **) malloc((argc+1) * sizeof(char *));
+-    // Need to allocate enough space for each argument
+-    // PLUS a terminating zero. So we'll allocate
+-    // argc+1 space
+-
++    
++    /*
++     * Check that we're not allocating 0 space. 
++     */
+     if (cp == NULL)
+     {
+         perror("malloc failed");
+         exit(1);
+     }
++    /*
++     * Initilize each block of space to 0.
++     */
+     memset(cp,'\0',((argc+1) * sizeof(char *)));
+ 
++    /*
++     * Now we can allocate enough memory for each string
++     * we will copy from argv. We will need to loop through
++     * 'cp' enough times to make space for each string, but
++     * also leave a terminating 0. This will copy the Vertical
++     * Array structure.
++     */
+     for ( i=0 ; i<argc ; i++ )
+     {
+-
++        /* Here we'll malloc the length of each string + 1. 
++         * This gives us enough space for each character + 
++         * a terminating 0
++         */
+         cp[i] = (char *) malloc(strlen(argv[i])+1 * sizeof(char));
+ 
++       /*
++        * Check that we're not allocating 0 space. 
++        */
+         if (cp[i] == NULL)
+         {
+             perror("malloc failed");
+             exit(1);
+         }
+ 
++       /*
++        * Initilize each block of space to 0.
++        */
+         memset(cp[i],'\0',strlen(argv[i])+1 * sizeof(char));
++        
++        /*
++         * Calling the strcp function will copy each string 
++         * over from argv.
++         */
+         strcp(cp[i],argv[i]);
+     }
+ 
+@@ -50,15 +86,19 @@ static char **duplicateArgs(int argc, char **argv)
+ 
+ static void freeDuplicatedArgs(char **copy)
+ {  
+-  //printf("copy: %lu\n", sizeof(copy));
++  // Save address of copy
++  char **p = copy;
++  /* Loop through each pointer in copy
++   * and free it. Stop when we reach the
++   * terminating 0.
++   */
+   while(*copy != 0)
+   {
+       free(*copy++);
+-      //printf("*copy: %lu\n", sizeof(*copy++));
+-      //printf("%s\n",*copy++);
+   }
+-  free(copy);
+-  //printf("**copy: %lu\n", sizeof(copy));
++
++  // Free copy at its original address.
++  free(p);
+ }
+ 
+ /*
+-- 
+2.7.4
+
+
+From 391f3f7673b40c999ca328af482e434074301939 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 17 Feb 2017 11:59:45 -0500
+Subject: [PATCH 09/10] Added comments to part1 for clarification. And created
+ an additional testcase in the Makefile for part2
+
+---
+ part1/isort.c  | 99 +++++++++++++++++++++++++++++++++-------------------------
+ part2/Makefile | 14 +++++++--
+ 2 files changed, 68 insertions(+), 45 deletions(-)
+
+diff --git a/part1/isort.c b/part1/isort.c
+index b10c57e..8299158 100644
+--- a/part1/isort.c
++++ b/part1/isort.c
+@@ -2,8 +2,15 @@
+ #include <stdlib.h>
+ #include <time.h>
+ #include <string.h>
++/*
++ * Comparison functions for ascending and descinding sort
++ */
+ int cmpIntDescending(const void *p1, const void *p2)
+ {
++    /* Here we need to dereference p1 and p1 as well
++     * as cast them to int * since that's what the value
++     * of p1 and p2 is.
++     */
+     int x = *(int *)p1;
+     int y = *(int *)p2;
+     if (x < y){
+@@ -16,6 +23,10 @@ int cmpIntDescending(const void *p1, const void *p2)
+ }
+ int cmpIntAscending(const void *p1, const void *p2)
+ {
++     /* Here we need to dereference p1 and p1 as well
++     * as cast them to int * since that's what the value
++     * of p1 and p2 is.
++     */
+     int x = *(int *)p1;
+     int y = *(int *)p2;
+     if (x < y){
+@@ -28,6 +39,8 @@ int cmpIntAscending(const void *p1, const void *p2)
+ }
+ void sort_integer_array(int *begin, int *end, int ascending)
+ {
++   // Here i need to check wether we're sorting in ascending order
++   // or descending order. Then run qsort appropriately.
+    if (ascending == 1) 
+        qsort(begin, (int)(end-begin+1), sizeof(int), &cmpIntAscending);
+    else if (ascending == 0)
+@@ -36,19 +49,22 @@ void sort_integer_array(int *begin, int *end, int ascending)
+ 
+ int main() {
+ 
++    /*
++     * Take in the size of the array we will sort as
++     * input from the user.
++     */
+     int SIZE;
+     scanf("%d", &SIZE);
+     srandom(time(NULL));
+ 
+-    /*
+-     *
+-     * Original Array
+-     *
++    /* Here we'll allocate enough memory to store
++     * SIZE amount of ints.
+      */
+-
+-    // Allocate memory for original array
+     int *p = (int *) malloc(SIZE * sizeof(int));
+ 
++    /*
++     * Check that we're not alocating 0 space
++     */
+     if (p == NULL) {
+         perror("malloc failed");
+         exit(1);
+@@ -57,52 +73,55 @@ int main() {
+     // Set each byte equal to 0
+     memset(p, 0, SIZE * sizeof(int));
+ 
+-    // Fill the array with random numbers
++    // Here we'll call random() to get a random
++    // number between 0-99 and assing that number
++    // to each element.
+     for (int i = 0; i<SIZE; i++)
+         p[i] = random()%100;
+ 
+-    /*
+-     *
+-     * First Copy of Original Array
+-     *
+-    */
+-   
+-    // Allocate space for a copy of the Original Array
++    /* ASCENDING ORDER ARRAY
++     * Now we can work on the copies of the original array
++     * that was just created.
++     */
++    // Allocate space for the first copy of the Original Array
+     int *p1 = (int *) malloc(SIZE * sizeof(int));
+-   
+     // Set each byte equal to 0
+     memset(p1, 0, SIZE * sizeof(int));
+     
+-    // Copy the array
++    /* This will copy the contents of the memory location
++     * from p to p1 up to SIZE*sizeof(int) bytes.
++     */
+     memcpy(p1,p, SIZE * sizeof(int));
+     
+-    // Sort the array in Ascending order
++    // Sort the array in Ascending order by passing
++    // in a reference to the first element of p1 and
++    // a the address of the last element in p1. Then pass
++    // 1 to indicate we want ascending.
+     sort_integer_array(p1, &p1[SIZE-1],1);
+  
+-    /*
+-     *
+-     * Second Copy of Original Array
+-     *
+-    */
+-   
+-    // Allocate space for a copy of the Original Array
++ 
++    // DESCENDING ORDER ARRAY  
++    // Allocate space for the second copy of the Original Array
+     int *p2 = (int *) malloc(SIZE * sizeof(int));
+    
+     // Set each byte equal to 0
+     memset(p2, 0, SIZE * sizeof(int));
+     
+-    // Copy the array
++     /* This will copy the contents of the memory location
++     * from p to p2 up to SIZE*sizeof(int) bytes.
++     */
+     memcpy(p2,p, SIZE * sizeof(int));
+     
+-    // Sort the array in Ascending order
++     // Sort the array in Descending order by passing
++    // in a reference to the first element of p2 and
++    // a the address of the last element in p2.Then pass 0 to
++    // indicate we want descending.
+     sort_integer_array(p2, &p2[SIZE-1],0);
+-    /*
+-     *
+-     * Print each array
+-     *
+-     */
+ 
+-    // Print the array
++    // OUTPUT
++    // Now we need to print the arrays
++   
++    // ORIGINAL - Random numbers
+     printf("original: ");
+ 
+     for (int i = 0; i<SIZE; i++)
+@@ -110,7 +129,7 @@ int main() {
+ 
+     printf("\n");
+ 
+-    // Printing sorted
++    // ASCENDING
+     printf("ascending: ");
+ 
+     for (int i = 0; i<SIZE; i++)
+@@ -118,8 +137,7 @@ int main() {
+ 
+     printf("\n");
+ 
+-    
+-    // Printing sorted
++    // DESCENDING
+     printf("descending: ");
+ 
+     for (int i = 0; i<SIZE; i++)
+@@ -128,15 +146,12 @@ int main() {
+     printf("\n");
+ 
+     /*
+-     *
+-     * Free Memory
+-     *
++     * Here we'll free the memeory we allocated to the heap.
+      */
+ 
+-    // Deallocate memory for original array
+-    free(p);
+-    free(p1);
+-    free(p2);
++    free(p); // Original Array
++    free(p1); // Copy 1
++    free(p2); // Copy 2
+ 
+     return 0;
+ }
+diff --git a/part2/Makefile b/part2/Makefile
+index 58a141b..7d092ab 100644
+--- a/part2/Makefile
++++ b/part2/Makefile
+@@ -40,9 +40,17 @@ twecho.o: twecho.c
+ clean:
+ 	rm -f *.o a.out core twecho
+ 
+-.PHONY: valgrind
+-valgrind:
+-	valgrind ./twecho one two three
++.PHONY: valgrindeven
++valgrindeven:
++	valgrind --leak-check=full ./twecho one two
++
++.PHONY: valgrindodd
++valgrindodd:
++	valgrind --leak-check=full ./twecho one two three
++
++.PHONY: valgrindspecialchar
++valgrindspecialchar:
++	valgrind --leak-check=full ./twecho one two t30 *w3
+ 
+ .PHONY: all
+ all: clean twecho
+-- 
+2.7.4
+
+
+From bd45a1cfbb3b668c022d08104d54173e280084ca Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 17 Feb 2017 12:16:04 -0500
+Subject: [PATCH 10/10] README.txt filled out as per the lab requirements.
+
+---
+ README.txt | 52 +++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 43 insertions(+), 9 deletions(-)
+
+diff --git a/README.txt b/README.txt
+index 66dfd3e..7a261c0 100644
+--- a/README.txt
++++ b/README.txt
+@@ -1,11 +1,45 @@
+ This file should contain:
+ 
+-  - your name
+-  - your UNI
+-  - lab assignment number
+-  - description for each part
+-  
+-The description should indicate whether your solution for the part is
+-working or not.  You may also want to include anything else you would
+-like to communicate to the grader such as extra functionalities you
+-implemented or how you tried to fix your non-working code.
++  - Michael Introini 
++  - mbi2105
++  - lab2
++  - descriptions:
++  Part1: Working as intended.
++
++  Part2: Working as intended.
++
++VALGRIND: PART1
++==9781== Memcheck, a memory error detector
++==9781== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
++==9781== Using Valgrind-3.11.0 and LibVEX; rerun with -h for copyright info
++==9781== Command: ./isort
++==9781== 
++original: 64 3 68 4 79 93 57 68 32 37 
++ascending: 3 4 32 37 57 64 68 68 79 93 
++descending: 93 79 68 68 64 57 37 32 4 3 
++==9781== 
++==9781== HEAP SUMMARY:
++==9781==     in use at exit: 0 bytes in 0 blocks
++==9781==   total heap usage: 5 allocs, 5 frees, 5,240 bytes allocated
++==9781== 
++==9781== All heap blocks were freed -- no leaks are possible
++==9781== 
++==9781== For counts of detected and suppressed errors, rerun with: -v
++==9781== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
++
++VALGRIND: PART2
++==10026== Memcheck, a memory error detector
++==10026== Copyright (C) 2002-2015, and GNU GPL'd, by Julian Seward et al.
++==10026== Using Valgrind-3.11.0 and LibVEX; rerun with -h for copyright info
++==10026== Command: ./twecho one\ two\ three
++==10026== 
++one two three ONE TWO THREE
++==10026== 
++==10026== HEAP SUMMARY:
++==10026==     in use at exit: 0 bytes in 0 blocks
++==10026==   total heap usage: 4 allocs, 4 frees, 4,143 bytes allocated
++==10026== 
++==10026== All heap blocks were freed -- no leaks are possible
++==10026== 
++==10026== For counts of detected and suppressed errors, rerun with: -v
++==10026== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+-- 
+2.7.4
+

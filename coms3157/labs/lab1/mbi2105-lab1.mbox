@@ -1,0 +1,1035 @@
+From ae9f4645b948f99ddd5b7c06ebfebe2342cf1dfe Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sat, 28 Jan 2017 15:02:05 -0500
+Subject: [PATCH 01/13] Practicing the Submission process
+
+---
+ README.txt          | 12 ++++++++----
+ part2/printf-test.c |  4 +++-
+ 2 files changed, 11 insertions(+), 5 deletions(-)
+
+diff --git a/README.txt b/README.txt
+index 34e2abf..dafdff7 100644
+--- a/README.txt
++++ b/README.txt
+@@ -1,8 +1,8 @@
+ This file should contain:
+ 
+-  - your name
+-  - your UNI
+-  - lab assignment number
++  - Michael Introini 
++  - mbi2105
++  - 1
+   - description for each part
+   
+ The description should indicate whether your solution for the part is
+@@ -19,11 +19,15 @@ Please write your answers after [ANSWER] on the same line.  Our auto-grading
+ script will look for lines that contain [ANSWER].
+ 
+ [0.1][ANSWER] 
++ git init
++ git add main.o
+ 
+ [0.2][ANSWER] 
++ (C) git clone
+ 
+ [0.3][ANSWER] 
++ git diff
+ 
+ [0.4][ANSWER] 
+-
++ git diff --cached
+ 
+diff --git a/part2/printf-test.c b/part2/printf-test.c
+index 10f2b58..485c247 100644
+--- a/part2/printf-test.c
++++ b/part2/printf-test.c
+@@ -1,9 +1,11 @@
+ #include <stdio.h>
+ 
++
++
+ int main()
+ {
+     int x = -1;
+-
++    
+     printf("printf-ing -1 as %%d: %d\n", x);
+     printf("printf-ing -1 as %%u: %u\n", x);
+     printf("printf-ing -1 as %%x: %x\n", x);
+-- 
+2.7.4
+
+
+From 660579f1afff934a3fba6165c11979fa6bb1bef9 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sat, 28 Jan 2017 17:03:48 -0500
+Subject: [PATCH 02/13] Created part1 dir, and wrote the portion of the program
+ that calculates the average of two numbers
+
+---
+ part1/Makefile | 50 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ part1/gcd.c    |  0
+ part1/gcd.h    |  0
+ part1/main.c   | 21 +++++++++++++++++++++
+ part1/prime.c  | 30 ++++++++++++++++++++++++++++++
+ part1/prime.h  |  6 ++++++
+ 6 files changed, 107 insertions(+)
+ create mode 100644 part1/Makefile
+ create mode 100644 part1/gcd.c
+ create mode 100644 part1/gcd.h
+ create mode 100644 part1/main.c
+ create mode 100644 part1/prime.c
+ create mode 100644 part1/prime.h
+
+diff --git a/part1/Makefile b/part1/Makefile
+new file mode 100644
+index 0000000..69136e9
+--- /dev/null
++++ b/part1/Makefile
+@@ -0,0 +1,50 @@
++# Makefile
++
++# Set compiler variables for C and C++
++CC = gcc
++CXX = g++
++
++# Create INCLUDES variable for use if needed
++INCLUDES =
++
++# Set flags for compiling C and C++
++# Debugging: -g
++# Enable all warnings: -Wall  
++CFLAGS = -g -Wall $(INCLUDES)
++CXXFLAGS = -g -Wall $(INCLUDES)
++
++# Set flag for linking
++# Debugging: -g
++LDFLAGS = -g
++
++# Create LDLIBS variable for linking libraries
++LDLIBS = 
++
++# ------------ #
++# First target #
++# ------------ #
++
++main: main.o gcd.o prime.o
++
++# ------------------- #
++# Dependent target(s) #
++# ------------------- #
++
++main.o: main.c
++
++gcd.o: gcd.c gcd.h
++
++prime.o: prime.c prime.h
++
++# --------------- #
++# PHONY target(s) #
++# --------------- #
++
++.PHONY: clean
++clean:
++	rm -f *.o a.out core main
++
++.PHONY: all
++all: clean main
++
++
+diff --git a/part1/gcd.c b/part1/gcd.c
+new file mode 100644
+index 0000000..e69de29
+diff --git a/part1/gcd.h b/part1/gcd.h
+new file mode 100644
+index 0000000..e69de29
+diff --git a/part1/main.c b/part1/main.c
+new file mode 100644
+index 0000000..d3a6210
+--- /dev/null
++++ b/part1/main.c
+@@ -0,0 +1,21 @@
++#include <stdio.h>
++#include "prime.h"
++
++int main()
++{
++    // Variable Declarations
++    int x;
++    int y;
++    float avg;
++
++    // Scan for user input
++    scanf("%d", &x);
++    scanf("%d", &y);
++
++    // Calculate average
++    avg = (x+y)/2;
++
++    // Print results to the scree
++    printf("You typed in %d and %d\n", x,y);
++    printf("The average is: %f\n", avg);
++}
+diff --git a/part1/prime.c b/part1/prime.c
+new file mode 100644
+index 0000000..f5bf68a
+--- /dev/null
++++ b/part1/prime.c
+@@ -0,0 +1,30 @@
++#include "prime.h"
++
++int isPrime(int x)
++{
++    int remainder;
++    int divisor = 2;
++    int result;
++    // Get Remainder
++    remainder = x % divisor;
++
++    // Catch numbers divisible by 2
++    if (remainder == 0)
++    {
++        result = divisor;
++    }
++    
++    while (remainder != 0) 
++    {
++        divisor++;
++        remainder = x % divisor;
++        
++        if (remainder == 0 && divisor == x)
++        {
++            result = 0;
++        } else if (remainder == 0) {
++            result = divisor;
++        }
++    }
++    return result;
++}
+diff --git a/part1/prime.h b/part1/prime.h
+new file mode 100644
+index 0000000..f05e265
+--- /dev/null
++++ b/part1/prime.h
+@@ -0,0 +1,6 @@
++#ifndef __PRIME_H__
++#define __PRIME_H__
++
++int isPrime(int x);
++
++#endif
+-- 
+2.7.4
+
+
+From a2639ee74274fdee0cfbdb7c3348fc4a0af5b8af Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Sat, 28 Jan 2017 17:24:12 -0500
+Subject: [PATCH 03/13] Added the prime checking function to main.c
+
+---
+ part1/main.c | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/part1/main.c b/part1/main.c
+index d3a6210..8262367 100644
+--- a/part1/main.c
++++ b/part1/main.c
+@@ -15,7 +15,24 @@ int main()
+     // Calculate average
+     avg = (x+y)/2;
+ 
+-    // Print results to the scree
++    // Print results to the screen
+     printf("You typed in %d and %d\n", x,y);
+     printf("The average is: %f\n", avg);
++
++    // Is each number prime?
++    if (isPrime(x) == 0)
++    {
++        printf("%d is Prime\n", x);
++    } else {
++        printf("%d is not Prime\n", x);
++        printf("Divisor is: %d \n", isPrime(x));
++    }
++    
++    if (isPrime(y) == 0)
++    {
++        printf("%d is Prime\n", y);
++    } else {
++        printf("%d is not Prime\n", y);
++        printf("Divisor is: %d \n", isPrime(y));
++    }
+ }
+-- 
+2.7.4
+
+
+From a299683e048b47e3314a4acb09e277b9aee324a5 Mon Sep 17 00:00:00 2001
+From: Michael Bryan Introini <mbi2105@columbia.edu>
+Date: Tue, 31 Jan 2017 11:39:02 -0500
+Subject: [PATCH 04/13] Wrote gcd function source code and header file.
+ Implemented gcd function in main.c
+
+---
+ README.txt   |  2 +-
+ part1/gcd.c  |  9 +++++++++
+ part1/gcd.h  |  1 +
+ part1/main.c | 16 ++++++++++++++--
+ 4 files changed, 25 insertions(+), 3 deletions(-)
+
+diff --git a/README.txt b/README.txt
+index dafdff7..b8ece7b 100644
+--- a/README.txt
++++ b/README.txt
+@@ -20,7 +20,7 @@ script will look for lines that contain [ANSWER].
+ 
+ [0.1][ANSWER] 
+  git init
+- git add main.o
++ git push 
+ 
+ [0.2][ANSWER] 
+  (C) git clone
+diff --git a/part1/gcd.c b/part1/gcd.c
+index e69de29..806b7c6 100644
+--- a/part1/gcd.c
++++ b/part1/gcd.c
+@@ -0,0 +1,9 @@
++#include "gcd.h"
++
++int gcd(int a, int b)
++{
++    if (a == 0)
++        return b;
++    return gcd(b%a, a);
++}
++
+diff --git a/part1/gcd.h b/part1/gcd.h
+index e69de29..50616d8 100644
+--- a/part1/gcd.h
++++ b/part1/gcd.h
+@@ -0,0 +1 @@
++int gcd(int a, int b);
+diff --git a/part1/main.c b/part1/main.c
+index 8262367..4f6a7d2 100644
+--- a/part1/main.c
++++ b/part1/main.c
+@@ -1,5 +1,6 @@
+ #include <stdio.h>
+ #include "prime.h"
++#include "gcd.h"
+ 
+ int main()
+ {
+@@ -25,7 +26,7 @@ int main()
+         printf("%d is Prime\n", x);
+     } else {
+         printf("%d is not Prime\n", x);
+-        printf("Divisor is: %d \n", isPrime(x));
++       // printf("Divisor is: %d \n", isPrime(x));
+     }
+     
+     if (isPrime(y) == 0)
+@@ -33,6 +34,17 @@ int main()
+         printf("%d is Prime\n", y);
+     } else {
+         printf("%d is not Prime\n", y);
+-        printf("Divisor is: %d \n", isPrime(y));
++     //   printf("Divisor is: %d \n", isPrime(y));
+     }
++
++
++    // Coprime or not coprime?
++    if (gcd(x,y) > 1)
++    {
++        printf("%d and %d are NOT Coprime", x,y);
++    } else {
++        printf("%d and %d are Coprime!", x,y);
++    }
++
++
+ }
+-- 
+2.7.4
+
+
+From 301a54ad8ad151dc61be095854ff2594169d5c74 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Thu, 2 Feb 2017 11:01:18 -0500
+Subject: [PATCH 05/13] Deleted test code from main.c, and added 'return 0' to
+ main.
+
+---
+ part1/main.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/part1/main.c b/part1/main.c
+index 4f6a7d2..11d6445 100644
+--- a/part1/main.c
++++ b/part1/main.c
+@@ -26,7 +26,6 @@ int main()
+         printf("%d is Prime\n", x);
+     } else {
+         printf("%d is not Prime\n", x);
+-       // printf("Divisor is: %d \n", isPrime(x));
+     }
+     
+     if (isPrime(y) == 0)
+@@ -34,17 +33,16 @@ int main()
+         printf("%d is Prime\n", y);
+     } else {
+         printf("%d is not Prime\n", y);
+-     //   printf("Divisor is: %d \n", isPrime(y));
+     }
+ 
+ 
+     // Coprime or not coprime?
+     if (gcd(x,y) > 1)
+     {
+-        printf("%d and %d are NOT Coprime", x,y);
++        printf("%d and %d are NOT Coprime\n", x,y);
+     } else {
+-        printf("%d and %d are Coprime!", x,y);
++        printf("%d and %d are Coprime!\n", x,y);
+     }
+ 
+-
++   return 0;
+ }
+-- 
+2.7.4
+
+
+From f53b2f7bd564fe65dbdf48a34f2bf681d900b018 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Thu, 2 Feb 2017 11:23:45 -0500
+Subject: [PATCH 06/13] Added comments to each function in main.c
+
+---
+ part1/main.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/part1/main.c b/part1/main.c
+index 11d6445..cf838c9 100644
+--- a/part1/main.c
++++ b/part1/main.c
+@@ -20,14 +20,18 @@ int main()
+     printf("You typed in %d and %d\n", x,y);
+     printf("The average is: %f\n", avg);
+ 
+-    // Is each number prime?
++    
++    // This set of if statements will test if either number is prime
++    // isPrime will return 0 if the number is prime.
++    // Is x prime?
+     if (isPrime(x) == 0)
+     {
+         printf("%d is Prime\n", x);
+     } else {
+         printf("%d is not Prime\n", x);
+     }
+-    
++
++    // Is y Prime?
+     if (isPrime(y) == 0)
+     {
+         printf("%d is Prime\n", y);
+@@ -36,7 +40,9 @@ int main()
+     }
+ 
+ 
+-    // Coprime or not coprime?
++    // Are x and y Coprime numbers?
++    // If the gcd function returns a number greater than 1
++    // then we know the numbers are not coprime.
+     if (gcd(x,y) > 1)
+     {
+         printf("%d and %d are NOT Coprime\n", x,y);
+-- 
+2.7.4
+
+
+From 228d3a490f519f39555750ff94223e657f6a2a26 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 3 Feb 2017 13:35:28 -0500
+Subject: [PATCH 07/13] Created source code and header files for part2, and
+ laid out the template for the structure of the assignment.
+
+---
+ part2/Makefile      | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ part2/bin.c         |  7 +++++++
+ part2/bin.h         |  6 ++++++
+ part2/convert.c     | 21 +++++++++++++++++++++
+ part2/printf-test.c |  2 +-
+ 5 files changed, 83 insertions(+), 1 deletion(-)
+ create mode 100644 part2/Makefile
+ create mode 100644 part2/bin.c
+ create mode 100644 part2/bin.h
+ create mode 100644 part2/convert.c
+
+diff --git a/part2/Makefile b/part2/Makefile
+new file mode 100644
+index 0000000..31b8385
+--- /dev/null
++++ b/part2/Makefile
+@@ -0,0 +1,48 @@
++# Makefile
++
++# Set compiler variables for C and C++
++CC = gcc
++CXX = g++
++
++# Create INCLUDES variable for use if needed
++INCLUDES =
++
++# Set flags for compiling C and C++
++# Debugging: -g
++# Enable all warnings: -Wall  
++CFLAGS = -g -Wall $(INCLUDES)
++CXXFLAGS = -g -Wall $(INCLUDES)
++
++# Set flag for linking
++# Debugging: -g
++LDFLAGS = -g
++
++# Create LDLIBS variable for linking libraries
++LDLIBS = 
++
++# ------------ #
++# First target #
++# ------------ #
++
++convert: convert.o bin.o
++
++# ------------------- #
++# Dependent target(s) #
++# ------------------- #
++
++convert.o: convert.c
++
++bin.o: bin.c
++
++# --------------- #
++# PHONY target(s) #
++# --------------- #
++
++.PHONY: clean
++clean:
++	rm -f *.o a.out core convert
++
++.PHONY: all
++all: clean convert
++
++
+diff --git a/part2/bin.c b/part2/bin.c
+new file mode 100644
+index 0000000..ef3de78
+--- /dev/null
++++ b/part2/bin.c
+@@ -0,0 +1,7 @@
++#include "bin.h"
++#include <stdio.h>
++
++unsigned getbits(unsigned x, int p, int n)
++{
++    return ( x >> (p+1-n) ) & ~( ~0 << n );
++}
+diff --git a/part2/bin.h b/part2/bin.h
+new file mode 100644
+index 0000000..f66903a
+--- /dev/null
++++ b/part2/bin.h
+@@ -0,0 +1,6 @@
++#ifndef __BIN_H_
++#define __BIN_H_
++
++unsigned getbits(unsigned x, int p, int n);
++int bitcount(unsigned x);
++#endif
+diff --git a/part2/convert.c b/part2/convert.c
+new file mode 100644
+index 0000000..46713f6
+--- /dev/null
++++ b/part2/convert.c
+@@ -0,0 +1,21 @@
++#include <stdio.h>
++#include "bin.h"
++
++int main()
++{
++    int x;
++    int i;
++    scanf("%d", &x);
++    
++    printf("signed dec:\t%d\n", x);
++    printf("unsigned dec:\t%u\n", x);
++    printf("hex:\t\t%x\n", x);
++    printf("binary:\t\t%d\n", x);
++ 
++    for ( i=32; i>0; --i )
++    {
++       printf("%d", getbits(x,i-1,1));
++    } 
++    
++    return 0;
++}
+diff --git a/part2/printf-test.c b/part2/printf-test.c
+index 485c247..8c69f80 100644
+--- a/part2/printf-test.c
++++ b/part2/printf-test.c
+@@ -4,7 +4,7 @@
+ 
+ int main()
+ {
+-    int x = -1;
++    int x = 10;
+     
+     printf("printf-ing -1 as %%d: %d\n", x);
+     printf("printf-ing -1 as %%u: %u\n", x);
+-- 
+2.7.4
+
+
+From 7f1a087bd0a77f4767027b6e50310f9ca70a7844 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 3 Feb 2017 14:27:39 -0500
+Subject: [PATCH 08/13] convert.c: Added functionality to calculate what bit
+ positions are 1s for the given number.
+
+---
+ part2/Makefile  |  4 ++--
+ part2/convert.c | 13 +++++++------
+ 2 files changed, 9 insertions(+), 8 deletions(-)
+
+diff --git a/part2/Makefile b/part2/Makefile
+index 31b8385..d73972c 100644
+--- a/part2/Makefile
++++ b/part2/Makefile
+@@ -30,9 +30,9 @@ convert: convert.o bin.o
+ # Dependent target(s) #
+ # ------------------- #
+ 
+-convert.o: convert.c
++convert.o: convert.c bin.h
+ 
+-bin.o: bin.c
++bin.o: bin.c bin.h
+ 
+ # --------------- #
+ # PHONY target(s) #
+diff --git a/part2/convert.c b/part2/convert.c
+index 46713f6..dbfdc2b 100644
+--- a/part2/convert.c
++++ b/part2/convert.c
+@@ -10,12 +10,13 @@ int main()
+     printf("signed dec:\t%d\n", x);
+     printf("unsigned dec:\t%u\n", x);
+     printf("hex:\t\t%x\n", x);
+-    printf("binary:\t\t%d\n", x);
+- 
+-    for ( i=32; i>0; --i )
++    printf("Binary:\t\t");
++
++    for ( i=8; i>0; --i )
+     {
+-       printf("%d", getbits(x,i-1,1));
+-    } 
+-    
++        printf("%d ", getbits(x,(i*4)-1,4));
++    }
++
++    printf("\n");
+     return 0;
+ }
+-- 
+2.7.4
+
+
+From c12abb45746557d14b6b7cd76e6721c92702607c Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 3 Feb 2017 15:44:38 -0500
+Subject: [PATCH 09/13] convert.c: Completed the Binary conversion
+ functionality. Binary numbers now display correctly as per the instructions
+ in Lab 1: 0000 0000 0000 0000 0000 0000 0000 0000.
+
+---
+ part2/convert.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/part2/convert.c b/part2/convert.c
+index dbfdc2b..0be49f5 100644
+--- a/part2/convert.c
++++ b/part2/convert.c
+@@ -5,16 +5,23 @@ int main()
+ {
+     int x;
+     int i;
++    int j;
++
+     scanf("%d", &x);
+     
+     printf("signed dec:\t%d\n", x);
+     printf("unsigned dec:\t%u\n", x);
+     printf("hex:\t\t%x\n", x);
+-    printf("Binary:\t\t");
+-
++    printf("binary:\t\t");
++    
++    // i = byte
+     for ( i=8; i>0; --i )
+     {
+-        printf("%d ", getbits(x,(i*4)-1,4));
++        for ( j=i*4; j>(i*4)-4; --j)
++        {
++            printf("%d", getbits(x,(j)-1,1));
++        }
++        printf(" ");
+     }
+ 
+     printf("\n");
+-- 
+2.7.4
+
+
+From 7d41fd0035dfec29cc0abf17f06a55936227dfdc Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 3 Feb 2017 23:05:56 -0500
+Subject: [PATCH 10/13] prime.c: added code to account for cases where 1 is
+ given as input. main.c: fixed the avg expression to acurrately represent a
+ float.
+
+---
+ part1/main.c  | 18 ++++++++++++------
+ part1/prime.c | 13 +++++++++++--
+ 2 files changed, 23 insertions(+), 8 deletions(-)
+
+diff --git a/part1/main.c b/part1/main.c
+index cf838c9..eca487e 100644
+--- a/part1/main.c
++++ b/part1/main.c
+@@ -14,11 +14,12 @@ int main()
+     scanf("%d", &y);
+ 
+     // Calculate average
+-    avg = (x+y)/2;
+-
++    //avg = ((float)x+(float)y)/(float)2;
++    avg = (x+y)/(float)2;
++    
+     // Print results to the screen
+     printf("You typed in %d and %d\n", x,y);
+-    printf("The average is: %f\n", avg);
++    printf("The average is: %.2f\n", avg);
+ 
+     
+     // This set of if statements will test if either number is prime
+@@ -43,11 +44,16 @@ int main()
+     // Are x and y Coprime numbers?
+     // If the gcd function returns a number greater than 1
+     // then we know the numbers are not coprime.
+-    if (gcd(x,y) > 1)
++    if (x || y == 1) 
+     {
+-        printf("%d and %d are NOT Coprime\n", x,y);
+-    } else {
+         printf("%d and %d are Coprime!\n", x,y);
++    } else {
++       if (gcd(x,y) > 1)
++         {
++             printf("%d and %d are NOT Coprime\n", x,y);
++         } else {
++             printf("%d and %d are Coprime!\n", x,y);
++         }
+     }
+ 
+    return 0;
+diff --git a/part1/prime.c b/part1/prime.c
+index f5bf68a..4ed9202 100644
+--- a/part1/prime.c
++++ b/part1/prime.c
+@@ -5,15 +5,23 @@ int isPrime(int x)
+     int remainder;
+     int divisor = 2;
+     int result;
++
+     // Get Remainder
+     remainder = x % divisor;
+ 
++    // Catch x = 1
++    if (x == 1)
++    {
++        return 0;
++    }
++
+     // Catch numbers divisible by 2
+     if (remainder == 0)
+     {
+-        result = divisor;
++        return divisor;
+     }
+-    
++
++    // Loop through 3 and above    
+     while (remainder != 0) 
+     {
+         divisor++;
+@@ -26,5 +34,6 @@ int isPrime(int x)
+             result = divisor;
+         }
+     }
++
+     return result;
+ }
+-- 
+2.7.4
+
+
+From 0606f5b2f18678b299da45c0d6ea1e796fdc8e29 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Fri, 3 Feb 2017 23:19:18 -0500
+Subject: [PATCH 11/13] Added short descriptions of each part to the RADME.txt
+ file
+
+---
+ README.txt | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/README.txt b/README.txt
+index b8ece7b..8338ee3 100644
+--- a/README.txt
++++ b/README.txt
+@@ -4,11 +4,10 @@ This file should contain:
+   - mbi2105
+   - 1
+   - description for each part
+-  
+-The description should indicate whether your solution for the part is
+-working or not.  You may also want to include anything else you would
+-like to communicate to the grader such as extra functionalities you
+-implemented or how you tried to fix your non-working code.
++    Part 1: Code is working as intended and displays the info in a simple
++    manner.
++    Part 2: Code is working as intended. The results are displayed as
++    per the instructions.
+ 
+ --------------------------------------------------------------------------
+ 
+-- 
+2.7.4
+
+
+From 9cd905d39c467c03f94bdb2a57f1859ceaff0057 Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Sat, 4 Feb 2017 13:15:23 -0500
+Subject: [PATCH 12/13] All parts of lab 1 completed, with comments and
+ citations.
+
+---
+ README.txt      | 30 +++++++++++++++++-------------
+ part1/gcd.c     |  1 +
+ part1/main.c    |  5 +++--
+ part2/bin.c     |  5 +++++
+ part2/bin.h     |  2 +-
+ part2/convert.c | 16 +++++++++++++---
+ 6 files changed, 40 insertions(+), 19 deletions(-)
+
+diff --git a/README.txt b/README.txt
+index 8338ee3..404c327 100644
+--- a/README.txt
++++ b/README.txt
+@@ -2,12 +2,21 @@ This file should contain:
+ 
+   - Michael Introini 
+   - mbi2105
+-  - 1
++  - Lab 1
+   - description for each part
+-    Part 1: Code is working as intended and displays the info in a simple
+-    manner.
+-    Part 2: Code is working as intended. The results are displayed as
++    
++    Part 1: 
++    Code is working as intended and displays the info in a simple manner.
++    Citation:
++    GCD function
++    http://www.geeksforgeeks.org/basic-and-extended-euclidean-algorithms/
++
++    Part 2: 
++    Code is working as intended. The results are displayed as
+     per the instructions.
++    Citation:
++    Get Bits function
++    K&R (The C Programming Language) - Page 49
+ 
+ --------------------------------------------------------------------------
+ 
+@@ -17,16 +26,11 @@ Part 0
+ Please write your answers after [ANSWER] on the same line.  Our auto-grading
+ script will look for lines that contain [ANSWER].
+ 
+-[0.1][ANSWER] 
+- git init
+- git push 
++[0.1][ANSWER] git init git push 
+ 
+-[0.2][ANSWER] 
+- (C) git clone
++[0.2][ANSWER] git clone
+ 
+-[0.3][ANSWER] 
+- git diff
++[0.3][ANSWER] git diff
+ 
+-[0.4][ANSWER] 
+- git diff --cached
++[0.4][ANSWER] git diff --cached
+ 
+diff --git a/part1/gcd.c b/part1/gcd.c
+index 806b7c6..27ca8a3 100644
+--- a/part1/gcd.c
++++ b/part1/gcd.c
+@@ -2,6 +2,7 @@
+ 
+ int gcd(int a, int b)
+ {
++    // Return the remainder of b%a until a = 0
+     if (a == 0)
+         return b;
+     return gcd(b%a, a);
+diff --git a/part1/main.c b/part1/main.c
+index eca487e..8441e43 100644
+--- a/part1/main.c
++++ b/part1/main.c
+@@ -7,6 +7,7 @@ int main()
+     // Variable Declarations
+     int x;
+     int y;
++    unsigned sum;
+     float avg;
+ 
+     // Scan for user input
+@@ -14,8 +15,8 @@ int main()
+     scanf("%d", &y);
+ 
+     // Calculate average
+-    //avg = ((float)x+(float)y)/(float)2;
+-    avg = (x+y)/(float)2;
++    sum = (x+y);
++    avg = sum/(float)2;
+     
+     // Print results to the screen
+     printf("You typed in %d and %d\n", x,y);
+diff --git a/part2/bin.c b/part2/bin.c
+index ef3de78..167e8ed 100644
+--- a/part2/bin.c
++++ b/part2/bin.c
+@@ -1,7 +1,12 @@
+ #include "bin.h"
+ #include <stdio.h>
+ 
++// This function comes from the K&R book (page 49)
++// Will return the range of bits in x (p to n) where
++// p is a position and n is the number of bits
++// to evalaluate. 
+ unsigned getbits(unsigned x, int p, int n)
+ {
+     return ( x >> (p+1-n) ) & ~( ~0 << n );
+ }
++
+diff --git a/part2/bin.h b/part2/bin.h
+index f66903a..4380297 100644
+--- a/part2/bin.h
++++ b/part2/bin.h
+@@ -2,5 +2,5 @@
+ #define __BIN_H_
+ 
+ unsigned getbits(unsigned x, int p, int n);
+-int bitcount(unsigned x);
++
+ #endif
+diff --git a/part2/convert.c b/part2/convert.c
+index 0be49f5..9f5a22c 100644
+--- a/part2/convert.c
++++ b/part2/convert.c
+@@ -3,27 +3,37 @@
+ 
+ int main()
+ {
++    // Declaring vars
+     int x;
+     int i;
+     int j;
+ 
++    // Begin user input request
+     scanf("%d", &x);
+     
++    // Begin output of each format
+     printf("signed dec:\t%d\n", x);
+     printf("unsigned dec:\t%u\n", x);
+     printf("hex:\t\t%x\n", x);
+-    printf("binary:\t\t");
+     
+-    // i = byte
++    // Begin printing the Binary representation of x
++    printf("binary:\t\t");
++  
++    // Outer loop: 8 times decending from 8 to 1
++    //   Represents each byte and adds a space in between
++    // Inner loop: 4 times decending from 32 to 1 
++    //   Represents each bit position in the byte
++    //   for example:  7654 3210
+     for ( i=8; i>0; --i )
+     {
+         for ( j=i*4; j>(i*4)-4; --j)
+         {
+             printf("%d", getbits(x,(j)-1,1));
+         }
+-        printf(" ");
++        printf("%c", 32);
+     }
+ 
+     printf("\n");
++    
+     return 0;
+ }
+-- 
+2.7.4
+
+
+From 7d7f821ef0cf8f2e6a03a81dfea17c6ce6311d6d Mon Sep 17 00:00:00 2001
+From: "michael.introini@gmail.com" <michael.introini@gmail.com>
+Date: Sat, 4 Feb 2017 15:24:23 -0500
+Subject: [PATCH 13/13] convert.c: Fixed formating issue; replaced tabs for
+ spaces.
+
+---
+ part2/convert.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/part2/convert.c b/part2/convert.c
+index 9f5a22c..cd7b826 100644
+--- a/part2/convert.c
++++ b/part2/convert.c
+@@ -12,12 +12,12 @@ int main()
+     scanf("%d", &x);
+     
+     // Begin output of each format
+-    printf("signed dec:\t%d\n", x);
+-    printf("unsigned dec:\t%u\n", x);
+-    printf("hex:\t\t%x\n", x);
++    printf("signed dec:   %d\n", x);
++    printf("unsigned dec: %u\n", x);
++    printf("hex:          %x\n", x);
+     
+     // Begin printing the Binary representation of x
+-    printf("binary:\t\t");
++    printf("binary:       ");
+   
+     // Outer loop: 8 times decending from 8 to 1
+     //   Represents each byte and adds a space in between
+-- 
+2.7.4
+
