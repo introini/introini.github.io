@@ -1,4 +1,4 @@
-## Welcome to GitHub Pages
+## CS Theory Notes
 
 ### Menu
 - [Chapter 0](https://mintadm.github.io/coms3261/notes/chapter-0.html)
