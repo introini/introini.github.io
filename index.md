@@ -4,7 +4,9 @@ You can use the [editor on GitHub](https://github.com/mintadm/mintadm.github.io/
 
 Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
 
-{:toc}
+### Menu
+- [Chapter 0](https://mintadm.github.io/coms3261/notes/chapter-0.html)
+- [Chapter 1](https://mintadm.github.io/coms3261/notes/chapter-1.html)
 
 ### Markdown
 
