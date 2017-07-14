@@ -1,4 +1,4 @@
-## Lecture 1  - Discrete Math Review
+## Lecture 1
 ### Automata, Computability, and Complexity
 ---
 *What are the fundamental capabilities and limitations of computers?*

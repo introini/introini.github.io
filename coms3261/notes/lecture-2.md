@@ -1,4 +1,4 @@
-## Chapter 1 
+## Lecture 2 
 ---
 
 
