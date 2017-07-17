@@ -1040,7 +1040,7 @@ MathJax.Hub.Config({
   showProcessingMessages: false
 });
 </script>
-<title>lecture-2</title></head><body><article class="markdown-body"><h2 id="chapter-1">Chapter 1</h2>
+<title>lecture-2</title></head><body><article class="markdown-body"><h2 id="lecture-2">Lecture 2</h2>
 <hr />
 
 <h3 id="closure-theorems">Closure Theorems</h3>
@@ -1062,5 +1062,17 @@ MathJax.Hub.Config({
 </ul>
 
 <p><em>Theorem:</em> If a language is recognized by an NDFA, then it is recognized by a DFA. Moreover, the proof is constructive. That is, there is an algorithm that derives the DFA from the NDFA.</p>
+
+<p><em>Note:</em> $\sum_\epsilon$ means that transitions are allows to use $\epsilon$, where $\epsilon$ represents the NULL string. In turn, this allows us to place $\epsilon$ transitions between NFAs to “jump” from accepting states to non-accepting states on another NFA, bridging the gap in between.</p>
+
+<p>NFA’s can be used to prove theorems about closures, such as Union, Concatenation, or Kleene Star (<a href="#closure-theorems">Regular Operations</a>) of two or more DFAs. <em>See SIPSER 59-63 for more formal definitions/proofs</em></p>
+
+<p>NFA’s can be seen as <strong>persistent</strong> machines; they exhaust all possiblities until a solution is reached.</p>
+
+<h4 id="converting-nfa-to-dfa">Converting NFA to DFA</h4>
+<p>$NFA = (Q,\sum,\delta,q_0,F)$
+$DFA = (Q’,\sum’,\delta’,q_0’,F’)$</p>
+
+<p>$Q = \mathcal{P}(Q)$</p>
 
 </article></body></html>
