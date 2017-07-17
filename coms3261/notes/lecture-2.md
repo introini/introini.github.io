@@ -7,15 +7,15 @@
 
 The regular operations are closed under regular languages.
 
-- Union
-- Concatination
-- Kleene Star
+- Union $A \cup B$
+- Concatination $A \circ B$
+- Kleene Star $A^\ast$
 
 ### Non-Deterministic Finite State Automata
 
 It's the same kind of 5-Tuple as a DFA, except that $\delta$ now works in the following way:
 
-- $\delta : Q \times \sum_\epsilon \rightarrow \mathcal{P}(Q)$ - Where $\mathcal{P}$ is the Powerset of all sets.
+- $\delta : (Q \times \sum_\epsilon) \rightarrow \mathcal{P}(Q)$ - Where $\mathcal{P}$ is the Powerset of all sets.
 
 *Theorem:* If a language is recognized by an NDFA, then it is recognized by a DFA. Moreover, the proof is constructive. That is, there is an algorithm that derives the DFA from the NDFA.
 
@@ -26,8 +26,9 @@ NFA's can be used to prove theorems about closures, such as Union, Concatenation
 NFA's can be seen as **persistent** machines; they exhaust all possiblities until a solution is reached.
 
 #### Converting NFA to DFA
-$NFA = (Q,\sum,\delta,q_0,F)$
-$DFA = (Q',\sum',\delta',q_0',F')$
+$N = (Q,\sum,\delta,q_0,F)$
+
+$D = (Q',\sum',\delta',q_0',F')$
 
 $Q = \mathcal{P}(Q)$
 

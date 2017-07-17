@@ -1048,9 +1048,9 @@ MathJax.Hub.Config({
 <p>The regular operations are closed under regular languages.</p>
 
 <ul>
-  <li>Union</li>
-  <li>Concatination</li>
-  <li>Kleene Star</li>
+  <li>Union $A \cup B$</li>
+  <li>Concatination $A \circ B$</li>
+  <li>Kleene Star $A^\ast$</li>
 </ul>
 
 <h3 id="non-deterministic-finite-state-automata">Non-Deterministic Finite State Automata</h3>
@@ -1058,7 +1058,7 @@ MathJax.Hub.Config({
 <p>It’s the same kind of 5-Tuple as a DFA, except that $\delta$ now works in the following way:</p>
 
 <ul>
-  <li>$\delta : Q \times \sum_\epsilon \rightarrow \mathcal{P}(Q)$ - Where $\mathcal{P}$ is the Powerset of all sets.</li>
+  <li>$\delta : (Q \times \sum_\epsilon) \rightarrow \mathcal{P}(Q)$ - Where $\mathcal{P}$ is the Powerset of all sets.</li>
 </ul>
 
 <p><em>Theorem:</em> If a language is recognized by an NDFA, then it is recognized by a DFA. Moreover, the proof is constructive. That is, there is an algorithm that derives the DFA from the NDFA.</p>
@@ -1070,8 +1070,9 @@ MathJax.Hub.Config({
 <p>NFA’s can be seen as <strong>persistent</strong> machines; they exhaust all possiblities until a solution is reached.</p>
 
 <h4 id="converting-nfa-to-dfa">Converting NFA to DFA</h4>
-<p>$NFA = (Q,\sum,\delta,q_0,F)$
-$DFA = (Q’,\sum’,\delta’,q_0’,F’)$</p>
+<p>$N = (Q,\sum,\delta,q_0,F)$</p>
+
+<p>$D = (Q’,\sum’,\delta’,q_0’,F’)$</p>
 
 <p>$Q = \mathcal{P}(Q)$</p>
 
