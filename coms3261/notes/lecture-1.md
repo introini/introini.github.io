@@ -152,3 +152,5 @@ The 5-tuple that describes [Example 1](#state-diagram---automata):
 L(M)
 : A language of M which is the set of all strings accepted by M
 
+Regular Language <a name="regular-language"></a>
+: A language is regular if there is some FSA that accepts it.
