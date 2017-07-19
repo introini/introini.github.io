@@ -7,3 +7,4 @@
 - [Lecture 4](https://mintadm.github.io/coms3261/notes/lecture-4.html)
 - [Lecture 5](https://mintadm.github.io/coms3261/notes/lecture-5.html)
 - [Midterm Review](https://mintadm.github.io/coms3261/notes/midterm-review.html)
+- [Lecture 6]
