@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="x-ua-compatible" content="ie=edge">
+		<title></title>
+		<meta name="description" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link href="../../css/home.css" rel="stylesheet">
+		<link href="../../css/custom.css" rel="stylesheet">
+		<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" >
+		<link href="https://fonts.googleapis.com/css?family=Raleway|Scope+One" rel="stylesheet">
+		
+	</head>
+	<body>
+		<!--[if lt IE 8]>
+		<p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+		<![endif]-->
+		<header>
+			<nav class="navbar has-shadow">
+				<div class="navbar-left">
+					<div class="navbar-item">
+						<a class="navbar-item" href="{% url 'home:index' %}"><h1 class="title"> Mike Introini </h1></a>
+					</div>
+				</div>
+				<div class="navbar-center">
+				</div>
+				<!-- This "nav-toggle" hamburger menu is only visible on mobile -->
+				<!-- You need JavaScript to toggle the "is-active" class on "nav-menu" -->
+				<span class="navbar-burger burger">
+					<span></span>
+					<span></span>
+					<span></span>
+				</span>
+				<!-- This "nav-menu" is hidden on mobile -->
+				<!-- Add the modifier "is-active" to display it on mobile -->
+				<div class="navbar-menu">
+				<div class="navbar-end">
+					<a class="navbar-item" href="https://github.com/mintadm">
+						<span class="icon">
+							<i class="fa fa-github"></i>
+						</span>
+					</a>
+					<a class="navbar-item" href="https://github.com/mintadm">
+						<span class="icon">
+							<i class="fa fa-linkedin"></i>
+						</span>
+					</a>
+					</div>
+				</div>
+			</nav>
+		</header>
+		<section class="section">
+			<div class="container home-main">
+				<h1 class="title"> Who Am I? </h1>
+				<p>
+					Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+					tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+					quis nostrud exercitation <a href="">ullamco</a> laboris nisi ut aliquip ex ea commodo
+					consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+					cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+					proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+				</p>
+			</div>
+		</section>
+		<div class="tabs is-centered home-main">
+			<ul>
+				<li><a>Projects</a></li>
+				<li><a>CV</a></li>
+				<li><a>Contact Me</a></li>
+			</ul>
+		</div>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+		<!-- Google Analytics: change UA-XXXXX-Y to be your site's ID. -->
+		<script>
+		window.ga=function(){ga.q.push(arguments)};ga.q=[];ga.l=+new Date;
+		ga('create','UA-XXXXX-Y','auto');ga('send','pageview')
+		</script>
+		<script src="https://www.google-analytics.com/analytics.js" async defer></script>
+	</body>
+</html>

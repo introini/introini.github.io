@@ -1,8 +1,5 @@
 ## Lecture 2 
 ---
-
-
-
 ### Closure Theorems ###
 
 The regular operations are closed under regular languages.

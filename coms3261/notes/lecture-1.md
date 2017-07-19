@@ -1,6 +1,16 @@
 ## Lecture 1
-### Automata, Computability, and Complexity
 ---
+
+#### Topics
+- [Review](#review--introduction)
+- [Computability](#computability)
+    + [FSA](#fsa)
+
+---
+
+## Review / Introduction
+[top](#topics)
+
 *What are the fundamental capabilities and limitations of computers?*
 
 #### Complexity Theory
@@ -49,7 +59,7 @@ $R = \\{A : A \text{ is a set and } A \notin A \\}$
 
 R is a set of other sets, where the rule is "If the set is not a member of itself, then it belongs to R". If we answer "yes" to the above question it creates the following problem. If R is in R, then it means that it meets the rule required to be in R. But, the rule to be in R is precisely NOT to be in are, therefore creating a contradition and probing why a set cannot be a member of itself.
 
-##### Cartesian Product
+#### Cartesian Product
 $(A \times B)$
 The collection of ordered pairs where the first element comes from A, and the second element comes from B.
 
@@ -65,13 +75,16 @@ The collection of ordered pairs where the first element comes from A, and the se
     + **k-tuples**: 3-tuple = $(1,2,3)$, 4-tuple = $(1,2,3,4)$
     + **2-tuple**: called an ordered pair.
 
-### Functions and Relations 
+#### Functions and Relations 
 
 $f : A \rightarrow B$
 
 - Recall from Discrete Mathematics
 
-### Some Definitions for Computability
+## Computability
+[top](#topics)
+
+**Definitions for Computability**
 
 Alphabet
 : Non-Empty finite set of symbols
@@ -88,7 +101,7 @@ Language
 
     - Does not need to be finite
 
-### Deterministic Finite State Automata
+### Deterministic Finite State Automaton
 
 **Example 1**
 
@@ -119,11 +132,10 @@ Language
     <polygon fill="black" stroke-width="1" points="56.5,102.5 48.5,97.5 48.5,107.5"/>
 </svg>
 
-**Described in plain English**
+**Described in plain English:** An even number of 0s after the last 1 will be accepted by this machine.
 
-An even number of 0s after the last 1 will be accepted by this machine.
-
-Legal Automata
+#### Finite State Automaton Definition: {#fsa}
+FSA
 : A 5-tuple $(Q,\sum,\delta,q_0,F)$
 
     - $Q    :$ Finite set of states

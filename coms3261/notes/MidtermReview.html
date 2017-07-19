@@ -1040,272 +1040,50 @@ MathJax.Hub.Config({
   showProcessingMessages: false
 });
 </script>
-<title>lecture-1</title></head><body><article class="markdown-body"><h2 id="lecture-1">Lecture 1</h2>
-<hr />
+<title>MidtermReview</title></head><body><article class="markdown-body"><h1 id="midterm-review">Midterm Review</h1>
 
-<h4 id="topics">Topics</h4>
+<h3 id="topics">Topics</h3>
 <ul>
-  <li><a href="#review--introduction">Review</a></li>
-  <li><a href="#computability">Computability</a>
-    <ul>
-      <li><a href="#fsa">FSA</a></li>
-    </ul>
+  <li>[DFA]</li>
+  <li>[NDFA]</li>
+  <li>[Context-Free Grammar]</li>
+  <li>[Pumping Lemma for Regular Languages]</li>
+  <li>[PDAs]</li>
+</ul>
+
+<ol>
+  <li>DFAs:  Given a description of a language in English, write a DFA that accepts that language.</li>
+</ol>
+
+<pre><code>a.  Example:  Write a DFA to recognize strings of 0s and 1s with an odd number of 1s.
+b.  Example:  Write a DFA to recognize strings of 0s and 1s with a given property, e.g., the presence of a required substring, like 001.
+</code></pre>
+
+<ol>
+  <li>
+    <p>Nondeterminism</p>
+
+    <p>a.  Write a NDFA to recognize a given language (described in English), using nondeterminism, if you wish.</p>
   </li>
-</ul>
+  <li>
+    <p>Context Free Grammars</p>
 
-<hr />
-
-<h2 id="review--introduction">Review / Introduction</h2>
-<p><a href="#topics">top</a></p>
-
-<p><em>What are the fundamental capabilities and limitations of computers?</em></p>
-
-<h4 id="complexity-theory">Complexity Theory</h4>
-<p><em>What makes some problems computationally hard and others easy?</em>
-- No real answer to this.</p>
-
-<ul>
-  <li>Understand what the root of the problem.</li>
-  <li>Might need to settle for less than a perfect solution.</li>
-  <li>Some problems are only hard in the worst case scenario, they&#8217;re easy otherwise.</li>
-  <li>Objective: Classify problems as <em>easy</em> or <em>hard</em>.</li>
-</ul>
-
-<h4 id="computability-theory">Computability Theory</h4>
-<ul>
-  <li>Some problems can&#8217;t be solved by computers
-    <ul>
-      <li>Determine whether a mathematical statement is <strong>True</strong> or <strong>False</strong>.</li>
-    </ul>
+    <p>a.  Given a language description, write a CFG that generates that language.
+i.  Example:  Write a CFG that recognizes palindromes.</p>
   </li>
-  <li>Classification of problems is <em>solvable</em> or <em>not solvable</em>.</li>
-</ul>
+  <li>
+    <p>Pumping Lemma for Regular languages</p>
 
-<h4 id="automata-theory">Automata Theory</h4>
-<ul>
-  <li>Definitions and properties of models of computation.
-    <ul>
-      <li><strong>finite automaton</strong>: Text processing, compilers, and hardware design.</li>
-      <li><strong>context-free grammar</strong>: Programming languages and artificial intelligence.</li>
-    </ul>
+    <p>a.  Know statement of Pumping Lemma
+b.  Understand its proof
+c.  Apply pumping lemma to show some language isn&#8217;t regular
+i.  Example:  Show that $\{a^jb^j : j &gt; 0\}# is not regular.</p>
   </li>
-</ul>
+  <li>
+    <p>PDAs:  Write a PDA to recognize a CFL described in English</p>
 
-<h3 id="mathematical-notations-and-terms">Mathematical Notations and Terms</h3>
-
-<h4 id="sets">Sets</h4>
-
-<ul>
-  <li>Group of objects represented as a unit.
-    <ul>
-      <li><strong>Elements / Members</strong>: objects in a set.</li>
-    </ul>
+    <p>a.  Write a PDA that accepts the following language:  $\{0^n1^{3n} : n\ge{0}\}$</p>
   </li>
-  <li><strong>Notation</strong>: $S = \{7,21,57\}$</li>
-  <li>Recal Notation from Discrete Math.</li>
-  <li>Example:
-    <ul>
-      <li>$A = \{1,2,3\}$</li>
-      <li>$B = \{4,\{1,2,3\},7\}$</li>
-    </ul>
-  </li>
-</ul>
-
-<table>
-  <thead>
-    <tr>
-      <th>-</th>
-      <th style="text-align: center">True</th>
-      <th style="text-align: center">False</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>$A \in B$</td>
-      <td style="text-align: center">$\checkmark$</td>
-      <td style="text-align: center">-</td>
-    </tr>
-    <tr>
-      <td>$4 \in B$</td>
-      <td style="text-align: center">$\checkmark$</td>
-      <td style="text-align: center">-</td>
-    </tr>
-    <tr>
-      <td>$B \in B$</td>
-      <td style="text-align: center">-</td>
-      <td style="text-align: center">$\checkmark$</td>
-    </tr>
-    <tr>
-      <td>$A \subseteq B$</td>
-      <td style="text-align: center">-</td>
-      <td style="text-align: center">$\checkmark$</td>
-    </tr>
-  </tbody>
-</table>
-
-<p><strong>Why a set A cannot be an element of itself</strong></p>
-
-<p>$R = \{A : A \text{ is a set and } A \notin A \}$</p>
-
-<p><em>Is R an element of R ($R \in R$)?</em></p>
-
-<p>R is a set of other sets, where the rule is &#8220;If the set is not a member of itself, then it belongs to R&#8221;. If we answer &#8220;yes&#8221; to the above question it creates the following problem. If R is in R, then it means that it meets the rule required to be in R. But, the rule to be in R is precisely NOT to be in are, therefore creating a contradition and probing why a set cannot be a member of itself.</p>
-
-<h4 id="cartesian-product">Cartesian Product</h4>
-<p>$(A \times B)$
-The collection of ordered pairs where the first element comes from A, and the second element comes from B.</p>
-
-<ul>
-  <li>Example:
-    <ul>
-      <li>$A = \{1,2\}$ , $B = \{3,4\}$</li>
-      <li>$(A \times B) = \{(1,3),(1,4),(2,3),(2,4)\}$</li>
-    </ul>
-  </li>
-</ul>
-
-<p><strong>Sequences and Tuples</strong></p>
-
-<ul>
-  <li>List of objects in order.</li>
-  <li><strong>Notation</strong>: Usually written in parenthesis $(7,21,57)$</li>
-  <li>Finite sequences are called <strong>tuples</strong>.
-    <ul>
-      <li><strong>k-tuples</strong>: 3-tuple = $(1,2,3)$, 4-tuple = $(1,2,3,4)$</li>
-      <li><strong>2-tuple</strong>: called an ordered pair.</li>
-    </ul>
-  </li>
-</ul>
-
-<h4 id="functions-and-relations">Functions and Relations</h4>
-
-<p>$f : A \rightarrow B$</p>
-
-<ul>
-  <li>Recall from Discrete Mathematics</li>
-</ul>
-
-<h2 id="computability">Computability</h2>
-<p><a href="#topics">top</a></p>
-
-<p><strong>Definitions for Computability</strong></p>
-
-<dl>
-  <dt>Alphabet</dt>
-  <dd>Non-Empty finite set of symbols</dd>
-  <dt>String</dt>
-  <dd>Finite sequence of symbols from the <em>alphabet</em>
-
-    <ul>
-      <li>Length</li>
-      <li>Empty string (denoted as $\epsilon$)</li>
-      <li>Blank / Space is of length 1</li>
-    </ul>
-  </dd>
-  <dt>Language</dt>
-  <dd>Set of <em>strings</em>
-
-    <ul>
-      <li>Does not need to be finite</li>
-    </ul>
-  </dd>
-</dl>
-
-<h3 id="deterministic-finite-state-automaton">Deterministic Finite State Automaton</h3>
-
-<p><strong>Example 1</strong></p>
-
-<svg width="500" height="200" version="1.1" xmlns="http://www.w3.org/2000/svg">
-    <ellipse stroke="black" stroke-width="1" fill="none" cx="86.5" cy="102.5" rx="30" ry="30" />
-    <text x="77.5" y="108.5" font-family="Times New Roman" font-size="20">q&#8321;</text>
-    <ellipse stroke="black" stroke-width="1" fill="none" cx="350.5" cy="102.5" rx="30" ry="30" />
-    <text x="341.5" y="108.5" font-family="Times New Roman" font-size="20">q&#8323;</text>
-    <ellipse stroke="black" stroke-width="1" fill="none" cx="215.5" cy="102.5" rx="30" ry="30" />
-    <text x="206.5" y="108.5" font-family="Times New Roman" font-size="20">q&#8322;</text>
-    <ellipse stroke="black" stroke-width="1" fill="none" cx="215.5" cy="102.5" rx="24" ry="24" />
-    <path stroke="black" stroke-width="1" fill="none" d="M 202.275,75.703 A 22.5,22.5 0 1 1 228.725,75.703" />
-    <text x="210.5" y="26.5" font-family="Times New Roman" font-size="20">1</text>
-    <polygon fill="black" stroke-width="1" points="228.725,75.703 237.473,72.17 229.382,66.292" />
-    <path stroke="black" stroke-width="1" fill="none" d="M 240.222,85.707 A 99.263,99.263 0 0 1 325.778,85.707" />
-    <polygon fill="black" stroke-width="1" points="325.778,85.707 320.714,77.748 316.404,86.772" />
-    <text x="277.5" y="67.5" font-family="Times New Roman" font-size="20">0</text>
-    <path stroke="black" stroke-width="1" fill="none" d="M 324.563,117.392 A 110.532,110.532 0 0 1 241.437,117.392" />
-    <polygon fill="black" stroke-width="1" points="241.437,117.392 246.969,125.033 250.73,115.767" />
-    <text x="270.5" y="146.5" font-family="Times New Roman" font-size="20">0,1</text>
-    <polygon stroke="black" stroke-width="1" points="116.5,102.5 185.5,102.5" />
-    <polygon fill="black" stroke-width="1" points="185.5,102.5 177.5,97.5 177.5,107.5" />
-    <text x="146.5" y="123.5" font-family="Times New Roman" font-size="20">1</text>
-    <path stroke="black" stroke-width="1" fill="none" d="M 73.275,75.703 A 22.5,22.5 0 1 1 99.725,75.703" />
-    <text x="81.5" y="26.5" font-family="Times New Roman" font-size="20">0</text>
-    <polygon fill="black" stroke-width="1" points="99.725,75.703 108.473,72.17 100.382,66.292" />
-    <polygon stroke="black" stroke-width="1" points="16.5,102.5 56.5,102.5" />
-    <polygon fill="black" stroke-width="1" points="56.5,102.5 48.5,97.5 48.5,107.5" />
-</svg>
-
-<p><strong>Described in plain English:</strong> An even number of 0s after the last 1 will be accepted by this machine.</p>
-
-<h4 id="fsa">Finite State Automaton Definition:</h4>
-<dl>
-  <dt>FSA</dt>
-  <dd>A 5-tuple $(Q,\sum,\delta,q_0,F)$
-
-    <ul>
-      <li>$Q    :$ Finite set of states</li>
-      <li>$\sum :$ Finite set (the alphabet)</li>
-      <li>$\delta :$ A function $Q \times \sum : \rightarrow Q$ (transition)</li>
-      <li>$q_0  :$ Start state (where the first arrow is pointing to)</li>
-      <li>$F    :$ Final, subset of $Q$,  set of accepting states</li>
-    </ul>
-  </dd>
-</dl>
-
-<p>$\delta :$ Every (State,Alphabet) has to have a unique arrow corresponding to it:</p>
-
-<p>The 5-tuple that describes <a href="#state-diagram---automata">Example 1</a>:</p>
-
-<ul>
-  <li>$Q : {q_0,q_1,q_2}$</li>
-  <li>$\sum : {0,1}$</li>
-  <li>$\delta :$</li>
-</ul>
-
-<table>
-  <thead>
-    <tr>
-      <th>&#160;</th>
-      <th>0</th>
-      <th>1</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>$q_1$</td>
-      <td>$q_1$</td>
-      <td>$q_2$</td>
-    </tr>
-    <tr>
-      <td>$q_2$</td>
-      <td>$q_2$</td>
-      <td>$q_3$</td>
-    </tr>
-    <tr>
-      <td>$q_3$</td>
-      <td>$q_3$</td>
-      <td>$q_2$</td>
-    </tr>
-  </tbody>
-</table>
-
-<ul>
-  <li>$q_0 : {q_1}$</li>
-  <li>$F : {q_2}$</li>
-</ul>
-
-<dl>
-  <dt>L(M)</dt>
-  <dd>A language of M which is the set of all strings accepted by M</dd>
-  <dt>Regular Language <a name="regular-language"></a></dt>
-  <dd>A language is regular if there is some FSA that accepts it.</dd>
-</dl>
+</ol>
 
 </article></body></html>
